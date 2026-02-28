@@ -100,7 +100,7 @@ func main() {
 
 	go func() {
 		logger.Info("server starting", zap.String("addr", addr))
-		if err := http.ListenAndServe(addr, router); err != nil {
+		if err := server.ListenAndServe(); err != nil {
 			logger.Fatal("server failed to start", zap.Error(err))
 		}
 	}()

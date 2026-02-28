@@ -308,9 +308,18 @@ func (s *AuthService) createUserFromGoogle(ctx context.Context, googleInfo *mode
 }
 
 func (s *AuthService) getGoogleUserInfo(ctx context.Context, token string) (*model.GoogleUserInfo, error) {
-	resp, err := http.Get(s.userInfoURL + "?access_token=" + token)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.userInfoURL, nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get request: %w", err)
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	q := req.URL.Query()
+	q.Set("access_token", token)
+	req.URL.RawQuery = q.Encode()
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute request: %w", err)
 	}
 	defer resp.Body.Close()
 

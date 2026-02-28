@@ -41,7 +41,7 @@ type ServiceConfig struct {
 
 type JWTConfig struct {
 	Secret        string        `mapstructure:"JWT_SECRET"`
-	AcessTTLStr   string        `mapstructure:"JWT_ACCESS_TTL"`
+	AccessTTLStr  string        `mapstructure:"JWT_ACCESS_TTL"`
 	RefreshTTLStr string        `mapstructure:"JWT_REFRESH_TTL"`
 	AccessTTL     time.Duration `mapstructure:"-"`
 	RefreshTTL    time.Duration `mapstructure:"-"`
@@ -65,7 +65,7 @@ func LoadConfig() (*Config, error) {
 		return nil, err
 	}
 
-	accessTTL, err := time.ParseDuration(cfg.JWT.AcessTTLStr)
+	accessTTL, err := time.ParseDuration(cfg.JWT.AccessTTLStr)
 	if err != nil {
 		return nil, fmt.Errorf("invalid JWT_ACCESS_TTL: %w", err)
 	}
