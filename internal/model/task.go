@@ -25,6 +25,7 @@ type TaskChapter struct {
 	Description string `json:"description"`
 	Order       int    `json:"order"`
 	Tasks       []Task `json:"tasks"`
+	SolvedCount int    `json:"solved_count"`
 }
 
 type Task struct {
@@ -35,6 +36,8 @@ type Task struct {
 	Difficulty  string `json:"difficulty"`
 	Order       int    `json:"order"`
 	ChapterSlug string `json:"chapter_slug,omitempty"`
+	// Solved: nil = не авторизован, true/false = авторизован
+	Solved *bool `json:"solved,omitempty"`
 }
 
 type SubmitResult struct {

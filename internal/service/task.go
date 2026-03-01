@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"io/fs"
 	"path/filepath"
@@ -8,6 +9,8 @@ import (
 	"strings"
 
 	"github.com/GlebMoskalev/go-path-backend/internal/model"
+	"github.com/GlebMoskalev/go-path-backend/internal/repository"
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
 )
@@ -18,17 +21,19 @@ var (
 )
 
 type TaskService struct {
-	log      *zap.Logger
-	chapters []model.TaskChapter
-	tasks    map[string]map[string]model.Task
-	tests    map[string]map[string]string
+	log            *zap.Logger
+	submissionRepo repository.SubmissionRepository
+	chapters       []model.TaskChapter
+	tasks          map[string]map[string]model.Task
+	tests          map[string]map[string]string
 }
 
-func NewTaskService(fsys fs.FS, root string, log *zap.Logger) (*TaskService, error) {
+func NewTaskService(fsys fs.FS, root string, log *zap.Logger, submissionRepo repository.SubmissionRepository) (*TaskService, error) {
 	s := &TaskService{
-		log:   log,
-		tasks: make(map[string]map[string]model.Task),
-		tests: make(map[string]map[string]string),
+		log:            log,
+		tasks:          make(map[string]map[string]model.Task),
+		tests:          make(map[string]map[string]string),
+		submissionRepo: submissionRepo,
 	}
 
 	if err := s.load(fsys, root); err != nil {
@@ -39,7 +44,7 @@ func NewTaskService(fsys fs.FS, root string, log *zap.Logger) (*TaskService, err
 }
 
 // ListChapters — все главы задач, задачи без description/template
-func (s *TaskService) ListChapters() []model.TaskChapter {
+func (s *TaskService) ListChapters(ctx context.Context, userID *uuid.UUID) []model.TaskChapter {
 	result := make([]model.TaskChapter, len(s.chapters))
 	for i, ch := range s.chapters {
 		result[i] = model.TaskChapter{
@@ -50,27 +55,47 @@ func (s *TaskService) ListChapters() []model.TaskChapter {
 			Tasks:       stripTaskContent(ch.Tasks),
 		}
 	}
+
+	if userID != nil {
+		solved := s.getSolvedSet(ctx, *userID)
+		for i := range result {
+			count := 0
+			for j := range result[i].Tasks {
+				v := solved[result[i].Slug+"/"+result[i].Tasks[j].Slug]
+				result[i].Tasks[j].Solved = &v
+				if v {
+					count++
+				}
+			}
+			result[i].SolvedCount = count
+		}
+	}
+
 	return result
 }
 
 // GetChapter — одна глава, задачи без description/template
-func (s *TaskService) GetChapter(slug string) (model.TaskChapter, error) {
+func (s *TaskService) GetChapter(ctx context.Context, slug string, userID *uuid.UUID) (model.TaskChapter, error) {
 	for _, ch := range s.chapters {
 		if ch.Slug == slug {
-			return model.TaskChapter{
+			result := model.TaskChapter{
 				Slug:        ch.Slug,
 				Title:       ch.Title,
 				Description: ch.Description,
 				Order:       ch.Order,
 				Tasks:       stripTaskContent(ch.Tasks),
-			}, nil
+			}
+			if userID != nil {
+				s.enrichWithSolved(ctx, *userID, &result)
+			}
+			return result, nil
 		}
 	}
 	return model.TaskChapter{}, ErrTaskChapterNotFound
 }
 
 // GetTask — одна задача С description и template (для страницы задачи)
-func (s *TaskService) GetTask(chapterSlug, taskSlug string) (model.Task, error) {
+func (s *TaskService) GetTask(ctx context.Context, chapterSlug, taskSlug string, userID *uuid.UUID) (model.Task, error) {
 	chapterTasks, ok := s.tasks[chapterSlug]
 	if !ok {
 		return model.Task{}, ErrTaskChapterNotFound
@@ -78,6 +103,10 @@ func (s *TaskService) GetTask(chapterSlug, taskSlug string) (model.Task, error) 
 	task, ok := chapterTasks[taskSlug]
 	if !ok {
 		return model.Task{}, ErrTaskNotFound
+	}
+	if userID != nil {
+		solved, _ := s.submissionRepo.HasSolved(ctx, *userID, chapterSlug, taskSlug)
+		task.Solved = &solved
 	}
 	return task, nil
 }
@@ -268,4 +297,24 @@ func (s *TaskService) totalTasks() int {
 		count += len(ch.Tasks)
 	}
 	return count
+}
+
+func (s *TaskService) getSolvedSet(ctx context.Context, userID uuid.UUID) map[string]bool {
+	solved, err := s.submissionRepo.GetSolvedTasks(ctx, userID)
+	if err != nil {
+		return nil
+	}
+	set := make(map[string]bool, len(solved))
+	for _, st := range solved {
+		set[st.ChapterSlug+"/"+st.TaskSlug] = true
+	}
+	return set
+}
+
+func (s *TaskService) enrichWithSolved(ctx context.Context, userID uuid.UUID, chapter *model.TaskChapter) {
+	solvedSet := s.getSolvedSet(ctx, userID)
+	for i := range chapter.Tasks {
+		v := solvedSet[chapter.Slug+"/"+chapter.Tasks[i].Slug]
+		chapter.Tasks[i].Solved = &v
+	}
 }

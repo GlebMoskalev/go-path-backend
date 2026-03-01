@@ -26,14 +26,16 @@ func NewTaskHandler(
 	}
 }
 func (h *TaskHandler) ListChapters(w http.ResponseWriter, r *http.Request) {
-	chapters := h.taskService.ListChapters()
+	userID := middleware.OptionalUserID(r.Context())
+	chapters := h.taskService.ListChapters(r.Context(), userID)
 	utils.ResponseWithJSON(w, http.StatusOK, chapters)
 }
 
 func (h *TaskHandler) GetChapter(w http.ResponseWriter, r *http.Request) {
 	slug := chi.URLParam(r, "chapterSlug")
+	userID := middleware.OptionalUserID(r.Context())
 
-	chapter, err := h.taskService.GetChapter(slug)
+	chapter, err := h.taskService.GetChapter(r.Context(), slug, userID)
 	if err != nil {
 		if errors.Is(err, service.ErrTaskChapterNotFound) {
 			utils.ResponseWithError(w, http.StatusNotFound, "chapter not found")
@@ -49,8 +51,9 @@ func (h *TaskHandler) GetChapter(w http.ResponseWriter, r *http.Request) {
 func (h *TaskHandler) GetTask(w http.ResponseWriter, r *http.Request) {
 	chapterSlug := chi.URLParam(r, "chapterSlug")
 	taskSlug := chi.URLParam(r, "taskSlug")
+	userID := middleware.OptionalUserID(r.Context())
 
-	task, err := h.taskService.GetTask(chapterSlug, taskSlug)
+	task, err := h.taskService.GetTask(r.Context(), chapterSlug, taskSlug, userID)
 	if err != nil {
 		if errors.Is(err, service.ErrTaskNotFound) || errors.Is(err, service.ErrTaskChapterNotFound) {
 			utils.ResponseWithError(w, http.StatusNotFound, "task not found")
@@ -66,7 +69,7 @@ func (h *TaskHandler) GetTask(w http.ResponseWriter, r *http.Request) {
 func (h *TaskHandler) Submit(w http.ResponseWriter, r *http.Request) {
 	chapterSlug := chi.URLParam(r, "chapterSlug")
 	taskSlug := chi.URLParam(r, "taskSlug")
-	userID, ok := middleware.GetUserIDFromContext(r.Context())
+	userID, ok := middleware.UserIDFromContext(r.Context())
 	if !ok {
 		utils.ResponseWithError(w, http.StatusUnauthorized, "unauthorized")
 		return

@@ -65,7 +65,7 @@ func main() {
 		logger.Fatal("failed to load theory", zap.Error(err))
 	}
 
-	taskService, err := service.NewTaskService(content.TasksFS, "tasks", logger)
+	taskService, err := service.NewTaskService(content.TasksFS, "tasks", logger, submissionRepo)
 	if err != nil {
 		logger.Fatal("failed to load tasks", zap.Error(err))
 	}
@@ -111,9 +111,13 @@ func main() {
 		})
 
 		api.Route("/tasks", func(r chi.Router) {
-			r.Get("/", taskHandler.ListChapters)
-			r.Get("/{chapterSlug}", taskHandler.GetChapter)
-			r.Get("/{chapterSlug}/{taskSlug}", taskHandler.GetTask)
+			r.Group(func(r chi.Router) {
+				r.Use(authMiddleware.OptionalAuthenticate)
+
+				r.Get("/", taskHandler.ListChapters)
+				r.Get("/{chapterSlug}", taskHandler.GetChapter)
+				r.Get("/{chapterSlug}/{taskSlug}", taskHandler.GetTask)
+			})
 
 			r.Group(func(r chi.Router) {
 				r.Use(authMiddleware.Authenticate)

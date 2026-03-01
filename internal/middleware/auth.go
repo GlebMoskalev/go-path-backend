@@ -69,7 +69,35 @@ func (m *AuthMiddleware) Authenticate(next http.Handler) http.Handler {
 	})
 }
 
-func GetUserIDFromContext(ctx context.Context) (uuid.UUID, bool) {
+func (m *AuthMiddleware) OptionalAuthenticate(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		authHeader := r.Header.Get("Authorization")
+		parts := strings.Split(authHeader, " ")
+
+		if len(parts) == 2 && parts[0] == "Bearer" {
+			token := parts[1]
+			userID, tokenVersion, err := m.authService.ValidateAccessToken(r.Context(), token)
+			if err == nil {
+				user, err := m.userService.GetByID(r.Context(), userID)
+				if err == nil && tokenVersion == user.TokenVersion {
+					ctx := context.WithValue(r.Context(), userIDKey, userID)
+					r = r.WithContext(ctx)
+				}
+			}
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+func UserIDFromContext(ctx context.Context) (uuid.UUID, bool) {
 	value, ok := ctx.Value(userIDKey).(uuid.UUID)
 	return value, ok
+}
+
+func OptionalUserID(ctx context.Context) *uuid.UUID {
+	if id, ok := UserIDFromContext(ctx); ok {
+		return &id
+	}
+	return nil
 }
