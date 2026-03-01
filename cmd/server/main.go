@@ -76,10 +76,16 @@ func main() {
 	}
 	submissionService := service.NewSubmissionService(logger, taskService, sandboxService, submissionRepo)
 
+	quizService, err := service.NewQuizService(content.TheoryFS, "theory", logger)
+	if err != nil {
+		logger.Fatal("failed to create quiz service", zap.Error(err))
+	}
+
 	userHandler := handler.NewUserHandler(userService)
 	authHandler := handler.NewAuthHandler(authService)
 	theoryHandler := handler.NewTheoryHandler(theoryService)
 	taskHandler := handler.NewTaskHandler(taskService, submissionService)
+	quizHandler := handler.NewQuizHandler(quizService)
 
 	authMiddleware := middleware.NewAuthMiddleware(authService, userService)
 
@@ -123,6 +129,13 @@ func main() {
 				r.Use(authMiddleware.Authenticate)
 				r.Post("/{chapterSlug}/{taskSlug}/submit", taskHandler.Submit)
 			})
+		})
+
+		api.Route("/quiz", func(r chi.Router) {
+			r.Use(authMiddleware.Authenticate)
+			r.Get("/chapters", quizHandler.ListChapters)
+			r.Get("/", quizHandler.GetQuestions)
+			r.Post("/answer", quizHandler.CheckAnswer)
 		})
 	})
 

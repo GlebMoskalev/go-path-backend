@@ -1,0 +1,9 @@
+questions:
+  - question: "Какой функцией выводят текст в консоль?"
+    options:
+      - "fmt.Println"
+      - "console.log"
+      - "print()"
+      - "System.out.println"
+    answer: 0
+    explanation: "В Go для вывода используется пакет fmt. Функция fmt.Println выводит строку с переводом строки."
