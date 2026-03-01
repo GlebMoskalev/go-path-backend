@@ -9,6 +9,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/GlebMoskalev/go-path-backend/content"
 	"github.com/GlebMoskalev/go-path-backend/internal/config"
 	"github.com/GlebMoskalev/go-path-backend/internal/database"
 	"github.com/GlebMoskalev/go-path-backend/internal/handler"
@@ -58,9 +59,14 @@ func main() {
 		cfg.JWT.RefreshTTL,
 	)
 	userService := service.NewUserService(logger, userRepo)
+	theoryService, err := service.NewTheoryService(content.TheoryFS, "theory", logger)
+	if err != nil {
+		logger.Fatal("failed to load theory", zap.Error(err))
+	}
 
 	userHandler := handler.NewUserHandler(userService)
 	authHandler := handler.NewAuthHandler(authService)
+	theoryHandler := handler.NewTheoryHandler(theoryService)
 
 	authMiddleware := middleware.NewAuthMiddleware(authService, userService)
 
@@ -83,6 +89,12 @@ func main() {
 			r.Get("/profile", userHandler.GetProfile)
 			r.Put("/profile", userHandler.UpdateProfile)
 			r.Delete("/account", userHandler.DeleteAccount)
+		})
+
+		api.Route("/theory", func(r chi.Router) {
+			r.Get("/", theoryHandler.ListChapter)
+			r.Get("/{chapterSlug}", theoryHandler.GetChapter)
+			r.Get("/{chapterSlug}/{lessonSlug}", theoryHandler.GetLesson)
 		})
 	})
 
