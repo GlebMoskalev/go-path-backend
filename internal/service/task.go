@@ -86,7 +86,8 @@ func (s *TaskService) GetChapter(ctx context.Context, slug string, userID *uuid.
 				Tasks:       stripTaskContent(ch.Tasks),
 			}
 			if userID != nil {
-				s.enrichWithSolved(ctx, *userID, &result)
+				solvedCount := s.enrichWithSolved(ctx, *userID, &result)
+				result.SolvedCount = solvedCount
 			}
 			return result, nil
 		}
@@ -311,10 +312,11 @@ func (s *TaskService) getSolvedSet(ctx context.Context, userID uuid.UUID) map[st
 	return set
 }
 
-func (s *TaskService) enrichWithSolved(ctx context.Context, userID uuid.UUID, chapter *model.TaskChapter) {
+func (s *TaskService) enrichWithSolved(ctx context.Context, userID uuid.UUID, chapter *model.TaskChapter) int {
 	solvedSet := s.getSolvedSet(ctx, userID)
 	for i := range chapter.Tasks {
 		v := solvedSet[chapter.Slug+"/"+chapter.Tasks[i].Slug]
 		chapter.Tasks[i].Solved = &v
 	}
+	return len(solvedSet)
 }
