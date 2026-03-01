@@ -45,6 +45,7 @@ func main() {
 
 	userRepo := repository.NewUserRepository(pool)
 	stateRepo := repository.NewStateRepository(redisClient)
+	submissionRepo := repository.NewSubmissionRepository(pool)
 
 	authService := service.NewAuthService(
 		logger,
@@ -64,9 +65,21 @@ func main() {
 		logger.Fatal("failed to load theory", zap.Error(err))
 	}
 
+	taskService, err := service.NewTaskService(content.TasksFS, "tasks", logger)
+	if err != nil {
+		logger.Fatal("failed to load tasks", zap.Error(err))
+	}
+
+	sandboxService, err := service.NewSandboxService(logger, cfg.Sandbox.Image, cfg.Sandbox.Timeout, cfg.Sandbox.Memory)
+	if err != nil {
+		logger.Fatal("failed to create sandbox service", zap.Error(err))
+	}
+	submissionService := service.NewSubmissionService(logger, taskService, sandboxService, submissionRepo)
+
 	userHandler := handler.NewUserHandler(userService)
 	authHandler := handler.NewAuthHandler(authService)
 	theoryHandler := handler.NewTheoryHandler(theoryService)
+	taskHandler := handler.NewTaskHandler(taskService, submissionService)
 
 	authMiddleware := middleware.NewAuthMiddleware(authService, userService)
 
@@ -95,6 +108,17 @@ func main() {
 			r.Get("/", theoryHandler.ListChapter)
 			r.Get("/{chapterSlug}", theoryHandler.GetChapter)
 			r.Get("/{chapterSlug}/{lessonSlug}", theoryHandler.GetLesson)
+		})
+
+		api.Route("/tasks", func(r chi.Router) {
+			r.Get("/", taskHandler.ListChapters)
+			r.Get("/{chapterSlug}", taskHandler.GetChapter)
+			r.Get("/{chapterSlug}/{taskSlug}", taskHandler.GetTask)
+
+			r.Group(func(r chi.Router) {
+				r.Use(authMiddleware.Authenticate)
+				r.Post("/{chapterSlug}/{taskSlug}/submit", taskHandler.Submit)
+			})
 		})
 	})
 

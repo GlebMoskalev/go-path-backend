@@ -1,0 +1,12 @@
+FROM golang:1.25-alpine
+
+WORKDIR /warm
+RUN echo 'module warm' > go.mod && echo 'go 1.25' >> go.mod && \
+    echo 'package warm' > warm.go && \
+    echo 'package warm' > warm_test.go && \
+    echo 'import "testing"' >> warm_test.go && \
+    echo 'func TestWarm(t *testing.T) {}' >> warm_test.go && \
+    go test -count=1 ./... && \
+    rm -rf /warm
+
+WORKDIR /sandbox

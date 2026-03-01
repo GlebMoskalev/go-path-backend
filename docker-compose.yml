@@ -1,4 +1,11 @@
 services:
+  sandbox-image:
+    build:
+      context: .
+      dockerfile: Dockerfile.sandbox
+    image: go-sandbox:1.25
+    entrypoint: [ "true" ]
+
   app:
     build: .
     container_name: go-api
@@ -6,7 +13,11 @@ services:
       - "8080:8080"
     env_file:
       - ".env"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
+      sandbox-image:
+        condition: service_completed_successfully
       migrate:
         condition: service_completed_successfully
     restart: always

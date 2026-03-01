@@ -13,6 +13,7 @@ type Config struct {
 	Google   GoogleOAuthConfig `mapstructure:",squash"`
 	Database DatabaseConfig    `mapstructure:",squash"`
 	Redis    RedisConfig       `mapstructure:",squash"`
+	Sandbox  SandboxConfig     `mapstructure:",squash"`
 	Env      string            `mapstructure:"ENV"`
 }
 
@@ -53,6 +54,13 @@ type RedisConfig struct {
 	DB       int    `mapstructure:"REDIS_DB"`
 }
 
+type SandboxConfig struct {
+	Image      string        `mapstructure:"SANDBOX_IMAGE"`
+	Timeout    time.Duration `mapstructure:"-"`
+	TimeoutStr string        `mapstructure:"SANDBOX_TIMEOUT"`
+	Memory     int64         `mapstructure:"SANDBOX_MEMORY"`
+}
+
 func LoadConfig() (*Config, error) {
 	viper.SetConfigFile(".env")
 	viper.SetConfigType("env")
@@ -82,6 +90,12 @@ func LoadConfig() (*Config, error) {
 		return nil, fmt.Errorf("invalid SERVER_SHUTDOWN_TIMEOUT: %w", err)
 	}
 	cfg.Server.ShutdownTimeout = shutdownTimeout
+
+	sandboxTimeout, err := time.ParseDuration(cfg.Sandbox.TimeoutStr)
+	if err != nil {
+		return nil, fmt.Errorf("invalid SANDBOX_TIMEOUT: %w", err)
+	}
+	cfg.Sandbox.Timeout = sandboxTimeout
 
 	return &cfg, nil
 }
