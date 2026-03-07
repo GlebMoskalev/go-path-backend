@@ -1,12 +1,25 @@
 FROM golang:1.25-alpine
 
-WORKDIR /warm
-RUN echo 'module warm' > go.mod && echo 'go 1.25' >> go.mod && \
-    echo 'package warm' > warm.go && \
-    echo 'package warm' > warm_test.go && \
-    echo 'import "testing"' >> warm_test.go && \
-    echo 'func TestWarm(t *testing.T) {}' >> warm_test.go && \
+# Прогрев для одиночных задач (пакет solution)
+WORKDIR /warm-solution
+RUN printf 'module solution\n\ngo 1.25\n' > go.mod && \
+    printf 'package solution\n' > solution.go && \
+    printf 'package solution\nimport "testing"\nfunc TestWarm(t *testing.T) {}\n' > solution_test.go && \
     go test -count=1 ./... && \
-    rm -rf /warm
+    rm -rf /warm-solution
+
+# Прогрев для многопакетных проектов (todoapi)
+WORKDIR /warm-project
+RUN mkdir -p model storage service handler && \
+    printf 'module todoapi\n\ngo 1.25\n' > go.mod && \
+    printf 'package model\nimport "time"\ntype Todo struct { ID int; Title string; Done bool; CreatedAt time.Time }\n' > model/warm.go && \
+    printf 'package storage\nimport ("errors";"sync";"todoapi/model")\nvar ErrNotFound = errors.New("not found")\ntype S struct { mu sync.RWMutex; m map[int]model.Todo }\n' > storage/warm.go && \
+    printf 'package storage\nimport "testing"\nfunc TestWarm(t *testing.T) {}\n' > storage/warm_test.go && \
+    printf 'package service\nimport ("todoapi/model";"todoapi/storage")\ntype Svc struct { s *storage.S }\nvar _ model.Todo\n' > service/warm.go && \
+    printf 'package service\nimport "testing"\nfunc TestWarm(t *testing.T) {}\n' > service/warm_test.go && \
+    printf 'package handler\nimport ("encoding/json";"errors";"net/http";"net/http/httptest";"strconv";"todoapi/storage")\nvar _ = errors.New; var _ = strconv.Atoi; var _ = json.Marshal; var _ = httptest.NewServer; var _ = http.StatusOK; var _ = storage.ErrNotFound\n' > handler/warm.go && \
+    printf 'package handler\nimport "testing"\nfunc TestWarm(t *testing.T) {}\n' > handler/warm_test.go && \
+    go test -count=1 ./... && \
+    rm -rf /warm-project
 
 WORKDIR /sandbox
