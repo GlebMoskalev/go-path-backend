@@ -44,13 +44,20 @@ func NewSandboxService(log *zap.Logger, imageName string, timeOut time.Duration,
 	}, nil
 }
 
-func (s *SandboxService) Run(ctx context.Context, userCode, testFile string) model.SubmitResult {
+func (s *SandboxService) RunTask(ctx context.Context, userCode, testFile string) model.SubmitResult {
 	files := map[string]string{
 		"go.mod":           "module solution\n\ngo 1.25\n",
 		"solution.go":      userCode,
 		"solution_test.go": testFile,
 	}
+	return s.run(ctx, files)
+}
 
+func (s *SandboxService) RunProject(ctx context.Context, files map[string]string) model.SubmitResult {
+	return s.run(ctx, files)
+}
+
+func (s *SandboxService) run(ctx context.Context, files map[string]string) model.SubmitResult {
 	tarBuf, err := s.createTarArchive(files)
 	if err != nil {
 		s.log.Error("failed to create tar archive", zap.Error(err))

@@ -74,18 +74,23 @@ func main() {
 	if err != nil {
 		logger.Fatal("failed to create sandbox service", zap.Error(err))
 	}
-	submissionService := service.NewSubmissionService(logger, taskService, sandboxService, submissionRepo)
-
 	quizService, err := service.NewQuizService(content.TheoryFS, "theory", logger)
 	if err != nil {
 		logger.Fatal("failed to create quiz service", zap.Error(err))
 	}
+
+	projectService, err := service.NewProjectService(content.ProjectsFS, "projects", logger, submissionRepo)
+	if err != nil {
+		logger.Fatal("failed to create project service", zap.Error(err))
+	}
+	submissionService := service.NewSubmissionService(logger, taskService, sandboxService, submissionRepo, projectService)
 
 	userHandler := handler.NewUserHandler(userService)
 	authHandler := handler.NewAuthHandler(authService)
 	theoryHandler := handler.NewTheoryHandler(theoryService)
 	taskHandler := handler.NewTaskHandler(taskService, submissionService)
 	quizHandler := handler.NewQuizHandler(quizService)
+	projectHandler := handler.NewProjectHandler(projectService, submissionService)
 
 	authMiddleware := middleware.NewAuthMiddleware(authService, userService)
 
@@ -136,6 +141,21 @@ func main() {
 			r.Get("/chapters", quizHandler.ListChapters)
 			r.Get("/", quizHandler.GetQuestions)
 			r.Post("/answer", quizHandler.CheckAnswer)
+		})
+
+		api.Route("/projects", func(r chi.Router) {
+			r.Group(func(r chi.Router) {
+				r.Use(authMiddleware.OptionalAuthenticate)
+
+				r.Get("/", projectHandler.ListProjects)
+				r.Get("/{projectSlug}", projectHandler.GetProject)
+				r.Get("/{projectSlug}/{stepSlug}", projectHandler.GetStep)
+			})
+
+			r.Group(func(r chi.Router) {
+				r.Use(authMiddleware.Authenticate)
+				r.Post("/{projectSlug}/{stepSlug}/submit", projectHandler.Submit)
+			})
 		})
 	})
 

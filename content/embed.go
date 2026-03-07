@@ -7,3 +7,6 @@ var TheoryFS embed.FS
 
 //go:embed all:tasks
 var TasksFS embed.FS
+
+//go:embed all:projects
+var ProjectsFS embed.FS
