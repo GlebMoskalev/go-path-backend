@@ -63,14 +63,17 @@ type SandboxConfig struct {
 }
 
 type AIConfig struct {
-	ApiKey           string  `mapstructure:"AI_API_KEY"`
-	ApiUrl           string  `mapstructure:"AI_API_URL"`
-	ModelPassedTests string  `mapstructure:"AI_MODEL_PASSED_TESTS"`
-	MaxTokensTask    int     `mapstructure:"AI_MAX_TOKENS_TASK"`
-	Temperature      float32 `mapstructure:"AI_TEMPERATURE"`
-	TopP             float32 `mapstructure:"AI_TOP_P"`
-	SystemPromptTask string  `mapstructure:"AI_SYSTEM_PROMPT_TASK"`
-	UserPromptTask   string  `mapstructure:"AI_USER_PROMPT_TASK"`
+	ApiKey              string  `mapstructure:"AI_API_KEY"`
+	ApiUrl              string  `mapstructure:"AI_API_URL"`
+	ModelPassedTests    string  `mapstructure:"AI_MODEL_PASSED_TESTS"`
+	MaxTokensTask       int     `mapstructure:"AI_MAX_TOKENS_TASK"`
+	MaxTokensProject    int     `mapstructure:"AI_MAX_TOKENS_PROJECT"`
+	Temperature         float32 `mapstructure:"AI_TEMPERATURE"`
+	TopP                float32 `mapstructure:"AI_TOP_P"`
+	SystemPromptTask    string  `mapstructure:"AI_SYSTEM_PROMPT_TASK"`
+	UserPromptTask      string  `mapstructure:"AI_USER_PROMPT_TASK"`
+	SystemPromptProject string  `mapstructure:"AI_SYSTEM_PROMPT_PROJECT"`
+	UserPromptProject   string  `mapstructure:"AI_USER_PROMPT_PROJECT"`
 }
 
 func LoadConfig() (*Config, error) {

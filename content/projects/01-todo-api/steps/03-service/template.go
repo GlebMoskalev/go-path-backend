@@ -2,6 +2,8 @@ package service
 
 // Реализуйте сервисный слой для работы с задачами.
 //
+// Импорты: "todoapi/model", "todoapi/storage"
+//
 // 1. Определите структуру TodoService с полем storage *storage.TodoStorage
 //
 // 2. Реализуйте конструктор:

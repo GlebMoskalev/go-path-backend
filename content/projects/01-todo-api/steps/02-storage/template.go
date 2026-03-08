@@ -2,6 +2,8 @@ package storage
 
 // Реализуйте In-Memory хранилище для задач.
 //
+// Импорт модели: "todoapi/model"
+//
 // 1. Определите переменную ошибки:
 //    var ErrNotFound = errors.New("todo not found")
 //

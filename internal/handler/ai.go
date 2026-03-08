@@ -65,3 +65,50 @@ func (h *AIHandler) AnalyzePassedTask(w http.ResponseWriter, r *http.Request) {
 
 	utils.ResponseWithJSON(w, http.StatusOK, resp)
 }
+
+func (h *AIHandler) AnalyzePassedProject(w http.ResponseWriter, r *http.Request) {
+	projectSlug := chi.URLParam(r, "projectSlug")
+	stepSlug := chi.URLParam(r, "stepSlug")
+	userID, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
+		utils.ResponseWithError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	var req struct {
+		Code string `json:"code"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.ResponseWithError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	if len(req.Code) == 0 {
+		utils.ResponseWithError(w, http.StatusBadRequest, "code is required")
+		return
+	}
+
+	if len(req.Code) > 10240 {
+		utils.ResponseWithError(w, http.StatusBadRequest, "code too large")
+		return
+	}
+
+	recommendation, err := h.aiService.AnalyzePassedCodeProject(r.Context(), projectSlug, stepSlug, req.Code, userID)
+	if err != nil {
+		if errors.Is(err, service.ErrTaskNotPassed) {
+			utils.ResponseWithError(w, http.StatusForbidden, "step not passed yet")
+			return
+		}
+		if errors.Is(err, service.ErrProjectNotFound) || errors.Is(err, service.ErrProjectStepNotFound) {
+			utils.ResponseWithError(w, http.StatusNotFound, "step not found")
+			return
+		}
+		utils.ResponseWithError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	utils.ResponseWithJSON(w, http.StatusOK, struct {
+		Recommendation string `json:"recommendation"`
+	}{Recommendation: recommendation})
+}

@@ -2,6 +2,8 @@ package handler
 
 // Реализуйте HTTP обработчики для Todo API.
 //
+// Импорты: "todoapi/model", "todoapi/service", "todoapi/storage"
+//
 // 1. Определите структуру TodoHandler с полем service *service.TodoService
 //
 // 2. Реализуйте конструктор:
