@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/GlebMoskalev/go-path-backend/internal/config"
 	"github.com/GlebMoskalev/go-path-backend/internal/model"
 	"github.com/GlebMoskalev/go-path-backend/internal/repository"
 	"github.com/golang-jwt/jwt/v5"
@@ -33,24 +34,23 @@ type AuthService struct {
 
 func NewAuthService(
 	log *zap.Logger, userRepo repository.UserRepository, stateRepo repository.StateRepository,
-	clientID, clientSecret, redirectURL, jwtSecret, userInfoURL string,
-	accessTTl, refreshTTL time.Duration,
+	googleCfg config.GoogleOAuthConfig, jwtCfg config.JWTConfig,
 ) *AuthService {
 	return &AuthService{
 		log:       log,
 		userRepo:  userRepo,
 		stateRepo: stateRepo,
-		jwtSecret: []byte(jwtSecret),
+		jwtSecret: []byte(jwtCfg.Secret),
 		oauth2Config: &oauth2.Config{
-			ClientID:     clientID,
-			ClientSecret: clientSecret,
-			RedirectURL:  redirectURL,
+			ClientID:     googleCfg.ClientID,
+			ClientSecret: googleCfg.ClientSecret,
+			RedirectURL:  googleCfg.RedirectURL,
 			Endpoint:     google.Endpoint,
 			Scopes:       []string{"openid", "email", "profile"},
 		},
-		userInfoURL: userInfoURL,
-		accessTTl:   accessTTl,
-		refreshTTL:  refreshTTL,
+		userInfoURL: googleCfg.UserInfoURL,
+		accessTTl:   jwtCfg.AccessTTL,
+		refreshTTL:  jwtCfg.RefreshTTL,
 	}
 }
 

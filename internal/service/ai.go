@@ -5,6 +5,7 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/GlebMoskalev/go-path-backend/internal/config"
 	"github.com/google/uuid"
 	"github.com/sashabaranov/go-openai"
 	"go.uber.org/zap"
@@ -34,29 +35,26 @@ func NewAIService(
 	log *zap.Logger,
 	serviceTask *TaskService,
 	serviceProject *ProjectService,
-	apiKey, apiUrl, modelPassedTests, systemPromptTask, userPromptTask, systemPromptProject, userPromptProject string,
-	maxTokensTask, maxTokensProject int,
-	temperature, topP float32,
+	aiCfg config.AIConfig,
 ) *AIService {
-	config := openai.DefaultConfig(apiKey)
-	config.BaseURL = apiUrl
-	client := openai.NewClientWithConfig(config)
-	ai := &AIService{
+	openaiCfg := openai.DefaultConfig(aiCfg.ApiKey)
+	openaiCfg.BaseURL = aiCfg.ApiUrl
+	client := openai.NewClientWithConfig(openaiCfg)
+	return &AIService{
 		log:                 log,
 		serviceTask:         serviceTask,
 		serviceProject:      serviceProject,
 		client:              client,
-		modelPassedTests:    modelPassedTests,
-		systemPromptTask:    systemPromptTask,
-		userPromptTask:      userPromptTask,
-		maxTokensTask:       maxTokensTask,
-		maxTokensProject:    maxTokensProject,
-		temperature:         temperature,
-		topP:                topP,
-		userPromptProject:   userPromptProject,
-		systemPromptProject: systemPromptProject,
+		modelPassedTests:    aiCfg.ModelPassedTests,
+		systemPromptTask:    aiCfg.SystemPromptTask,
+		userPromptTask:      aiCfg.UserPromptTask,
+		maxTokensTask:       aiCfg.MaxTokensTask,
+		maxTokensProject:    aiCfg.MaxTokensProject,
+		temperature:         aiCfg.Temperature,
+		topP:                aiCfg.TopP,
+		userPromptProject:   aiCfg.UserPromptProject,
+		systemPromptProject: aiCfg.SystemPromptProject,
 	}
-	return ai
 }
 
 func (s *AIService) AnalyzePassedCodeTask(ctx context.Context, chapterSlug, taskSlug, code string, userID uuid.UUID) (string, error) {

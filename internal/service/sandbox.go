@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GlebMoskalev/go-path-backend/internal/config"
 	"github.com/GlebMoskalev/go-path-backend/internal/model"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
@@ -24,23 +25,23 @@ type SandboxService struct {
 	memory  int64
 }
 
-func NewSandboxService(log *zap.Logger, imageName string, timeOut time.Duration, memory int64) (*SandboxService, error) {
+func NewSandboxService(log *zap.Logger, sandboxCfg config.SandboxConfig) (*SandboxService, error) {
 	docker, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
 		return nil, fmt.Errorf("docker client: %v", err)
 	}
 
-	_, err = docker.ImageInspect(context.Background(), imageName)
+	_, err = docker.ImageInspect(context.Background(), sandboxCfg.Image)
 	if err != nil {
-		return nil, fmt.Errorf("sandbox image %s not found locally: %v", imageName, err)
+		return nil, fmt.Errorf("sandbox image %s not found locally: %v", sandboxCfg.Image, err)
 	}
 
 	return &SandboxService{
 		log:     log,
 		docker:  docker,
-		image:   imageName,
-		timeOut: timeOut,
-		memory:  memory,
+		image:   sandboxCfg.Image,
+		timeOut: sandboxCfg.Timeout,
+		memory:  sandboxCfg.Memory,
 	}, nil
 }
 

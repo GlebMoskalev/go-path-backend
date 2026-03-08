@@ -51,13 +51,8 @@ func main() {
 		logger,
 		userRepo,
 		stateRepo,
-		cfg.Google.ClientID,
-		cfg.Google.ClientSecret,
-		cfg.Google.RedirectURL,
-		cfg.JWT.Secret,
-		cfg.Google.UserInfoURL,
-		cfg.JWT.AccessTTL,
-		cfg.JWT.RefreshTTL,
+		cfg.Google,
+		cfg.JWT,
 	)
 	userService := service.NewUserService(logger, userRepo)
 	theoryService, err := service.NewTheoryService(content.TheoryFS, "theory", logger)
@@ -70,7 +65,7 @@ func main() {
 		logger.Fatal("failed to load tasks", zap.Error(err))
 	}
 
-	sandboxService, err := service.NewSandboxService(logger, cfg.Sandbox.Image, cfg.Sandbox.Timeout, cfg.Sandbox.Memory)
+	sandboxService, err := service.NewSandboxService(logger, cfg.Sandbox)
 	if err != nil {
 		logger.Fatal("failed to create sandbox service", zap.Error(err))
 	}
@@ -84,11 +79,7 @@ func main() {
 		logger.Fatal("failed to create project service", zap.Error(err))
 	}
 	submissionService := service.NewSubmissionService(logger, taskService, sandboxService, submissionRepo, projectService)
-	aiService := service.NewAIService(logger, taskService, projectService,
-		cfg.AIConfig.ApiKey, cfg.AIConfig.ApiUrl, cfg.AIConfig.ModelPassedTests, cfg.AIConfig.SystemPromptTask,
-		cfg.AIConfig.UserPromptTask, cfg.AIConfig.SystemPromptProject, cfg.AIConfig.UserPromptProject,
-		cfg.AIConfig.MaxTokensTask, cfg.AIConfig.MaxTokensProject, cfg.AIConfig.Temperature, cfg.AIConfig.TopP,
-	)
+	aiService := service.NewAIService(logger, taskService, projectService, cfg.AIConfig)
 
 	userHandler := handler.NewUserHandler(userService)
 	authHandler := handler.NewAuthHandler(authService)
