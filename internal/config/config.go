@@ -14,6 +14,7 @@ type Config struct {
 	Database DatabaseConfig    `mapstructure:",squash"`
 	Redis    RedisConfig       `mapstructure:",squash"`
 	Sandbox  SandboxConfig     `mapstructure:",squash"`
+	AIConfig AIConfig          `mapstructure:",squash"`
 	Env      string            `mapstructure:"ENV"`
 }
 
@@ -59,6 +60,17 @@ type SandboxConfig struct {
 	Timeout    time.Duration `mapstructure:"-"`
 	TimeoutStr string        `mapstructure:"SANDBOX_TIMEOUT"`
 	Memory     int64         `mapstructure:"SANDBOX_MEMORY"`
+}
+
+type AIConfig struct {
+	ApiKey           string  `mapstructure:"AI_API_KEY"`
+	ApiUrl           string  `mapstructure:"AI_API_URL"`
+	ModelPassedTests string  `mapstructure:"AI_MODEL_PASSED_TESTS"`
+	MaxTokensTask    int     `mapstructure:"AI_MAX_TOKENS_TASK"`
+	Temperature      float32 `mapstructure:"AI_TEMPERATURE"`
+	TopP             float32 `mapstructure:"AI_TOP_P"`
+	SystemPromptTask string  `mapstructure:"AI_SYSTEM_PROMPT_TASK"`
+	UserPromptTask   string  `mapstructure:"AI_USER_PROMPT_TASK"`
 }
 
 func LoadConfig() (*Config, error) {

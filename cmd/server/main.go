@@ -84,6 +84,10 @@ func main() {
 		logger.Fatal("failed to create project service", zap.Error(err))
 	}
 	submissionService := service.NewSubmissionService(logger, taskService, sandboxService, submissionRepo, projectService)
+	aiService := service.NewAIService(logger, taskService,
+		cfg.AIConfig.ApiKey, cfg.AIConfig.ApiUrl, cfg.AIConfig.ModelPassedTests, cfg.AIConfig.SystemPromptTask,
+		cfg.AIConfig.UserPromptTask, cfg.AIConfig.MaxTokensTask, cfg.AIConfig.Temperature, cfg.AIConfig.TopP,
+	)
 
 	userHandler := handler.NewUserHandler(userService)
 	authHandler := handler.NewAuthHandler(authService)
@@ -91,6 +95,7 @@ func main() {
 	taskHandler := handler.NewTaskHandler(taskService, submissionService)
 	quizHandler := handler.NewQuizHandler(quizService)
 	projectHandler := handler.NewProjectHandler(projectService, submissionService)
+	aiHandler := handler.NewAIHandler(aiService)
 
 	authMiddleware := middleware.NewAuthMiddleware(authService, userService)
 
@@ -156,6 +161,12 @@ func main() {
 				r.Use(authMiddleware.Authenticate)
 				r.Post("/{projectSlug}/{stepSlug}/submit", projectHandler.Submit)
 			})
+		})
+
+		api.Route("/analyze", func(r chi.Router) {
+			r.Use(authMiddleware.Authenticate)
+
+			r.Post("/task/{chapterSlug}/{taskSlug}", aiHandler.AnalyzePassedTask)
 		})
 	})
 
