@@ -35,13 +35,13 @@ func (h *AuthHandler) GoogleCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tokenPair, err := h.authService.HandleGoogleCallback(r.Context(), code, state)
+	redirectURL, err := h.authService.HandleGoogleCallback(r.Context(), code, state)
 	if err != nil {
 		utils.ResponseWithError(w, http.StatusInternalServerError, "failed to authenticate")
 		return
 	}
 
-	utils.ResponseWithJSON(w, http.StatusOK, tokenPair)
+	http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 }
 
 func (h *AuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {

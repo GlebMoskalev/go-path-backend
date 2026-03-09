@@ -28,10 +28,11 @@ type DatabaseConfig struct {
 }
 
 type GoogleOAuthConfig struct {
-	ClientID     string `mapstructure:"GOOGLE_CLIENT_ID"`
-	ClientSecret string `mapstructure:"GOOGLE_CLIENT_SECRET"`
-	RedirectURL  string `mapstructure:"GOOGLE_REDIRECT_URL"`
-	UserInfoURL  string `mapstructure:"GOOGLE_USER_INFO_URL"`
+	ClientID           string `mapstructure:"GOOGLE_CLIENT_ID"`
+	ClientSecret       string `mapstructure:"GOOGLE_CLIENT_SECRET"`
+	CallbackURL        string `mapstructure:"GOOGLE_CALLBACK_URL"`
+	FrontedCallbackURL string `mapstructure:"FRONTEND_CALLBACK_URL"`
+	UserInfoURL        string `mapstructure:"GOOGLE_USER_INFO_URL"`
 }
 
 type ServiceConfig struct {

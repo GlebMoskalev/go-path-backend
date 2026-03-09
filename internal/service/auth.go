@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/GlebMoskalev/go-path-backend/internal/config"
@@ -22,14 +23,15 @@ import (
 )
 
 type AuthService struct {
-	log          *zap.Logger
-	userRepo     repository.UserRepository
-	stateRepo    repository.StateRepository
-	oauth2Config *oauth2.Config
-	jwtSecret    []byte
-	accessTTl    time.Duration
-	refreshTTL   time.Duration
-	userInfoURL  string
+	log                *zap.Logger
+	userRepo           repository.UserRepository
+	stateRepo          repository.StateRepository
+	oauth2Config       *oauth2.Config
+	jwtSecret          []byte
+	accessTTl          time.Duration
+	refreshTTL         time.Duration
+	userInfoURL        string
+	frontedCallbackURL string
 }
 
 func NewAuthService(
@@ -44,13 +46,14 @@ func NewAuthService(
 		oauth2Config: &oauth2.Config{
 			ClientID:     googleCfg.ClientID,
 			ClientSecret: googleCfg.ClientSecret,
-			RedirectURL:  googleCfg.RedirectURL,
+			RedirectURL:  googleCfg.CallbackURL,
 			Endpoint:     google.Endpoint,
 			Scopes:       []string{"openid", "email", "profile"},
 		},
-		userInfoURL: googleCfg.UserInfoURL,
-		accessTTl:   jwtCfg.AccessTTL,
-		refreshTTL:  jwtCfg.RefreshTTL,
+		userInfoURL:        googleCfg.UserInfoURL,
+		accessTTl:          jwtCfg.AccessTTL,
+		refreshTTL:         jwtCfg.RefreshTTL,
+		frontedCallbackURL: googleCfg.FrontedCallbackURL,
 	}
 }
 
@@ -68,54 +71,64 @@ func (s *AuthService) GetGoogleLoginURL(ctx context.Context) (string, error) {
 	return s.oauth2Config.AuthCodeURL(state, oauth2.AccessTypeOffline), nil
 }
 
-func (s *AuthService) HandleGoogleCallback(ctx context.Context, code, state string) (*model.TokenPair, error) {
+func (s *AuthService) HandleGoogleCallback(ctx context.Context, code, state string) (string, error) {
 	valid, err := s.stateRepo.Validate(ctx, state)
 	if err != nil {
 		s.log.Error("failed to validate state", zap.Error(err))
-		return nil, fmt.Errorf("validate state: %w", err)
+		return "", fmt.Errorf("validate state: %w", err)
 	}
 	if !valid {
 		s.log.Warn("invalid or expired oauth state", zap.String("state", state))
-		return nil, errors.New("invalid or expired state")
+		return "", errors.New("invalid or expired state")
 	}
 
 	token, err := s.oauth2Config.Exchange(ctx, code)
 	if err != nil {
 		s.log.Error("failed to exchange code", zap.Error(err))
-		return nil, fmt.Errorf("exchange code: %w", err)
+		return "", fmt.Errorf("exchange code: %w", err)
 	}
 
 	userInfo, err := s.getGoogleUserInfo(ctx, token.AccessToken)
 	if err != nil {
 		s.log.Error("failed to get google user info", zap.Error(err))
-		return nil, fmt.Errorf("get google user info: %w", err)
+		return "", fmt.Errorf("get google user info: %w", err)
 	}
 
 	user, err := s.userRepo.GetByGoogleID(ctx, userInfo.ID)
 	if err != nil {
 		if !errors.Is(err, repository.UserNotFound) {
 			s.log.Error("failed to get user by google id", zap.Error(err))
-			return nil, fmt.Errorf("get user by google id: %w", err)
+			return "", fmt.Errorf("get user by google id: %w", err)
 		}
 		user, err = s.createUserFromGoogle(ctx, userInfo)
 		if err != nil {
 			s.log.Error("failed to create user", zap.Error(err))
-			return nil, fmt.Errorf("create user: %w", err)
+			return "", fmt.Errorf("create user: %w", err)
 		}
 	}
 
 	if err = s.userRepo.UpdateLastLogin(ctx, user.ID); err != nil {
 		s.log.Error("failed to update last login", zap.String("user_id", user.ID.String()), zap.Error(err))
-		return nil, fmt.Errorf("update last login: %w", err)
+		return "", fmt.Errorf("update last login: %w", err)
 	}
 
 	tokenPair, err := s.generateTokenPair(user)
 	if err != nil {
 		s.log.Error("failed to generate token pair", zap.Error(err))
-		return nil, fmt.Errorf("generate token pair: %w", err)
+		return "", fmt.Errorf("generate token pair: %w", err)
 	}
 
-	return tokenPair, nil
+	redirectURL, err := url.Parse(s.frontedCallbackURL)
+	if err != nil {
+		s.log.Error("failed to parse redirect front url", zap.Error(err))
+		return "", fmt.Errorf("parse redirect front url: %w", err)
+	}
+	params := url.Values{}
+	params.Set("access_token", tokenPair.AccessToken)
+	params.Set("refresh_token", tokenPair.RefreshToken)
+	redirectURL.RawQuery = params.Encode()
+
+	return redirectURL.String(), nil
 }
 
 func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (*model.TokenPair, error) {
