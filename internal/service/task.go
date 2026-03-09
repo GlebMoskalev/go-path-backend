@@ -106,8 +106,20 @@ func (s *TaskService) GetTask(ctx context.Context, chapterSlug, taskSlug string,
 		return model.Task{}, ErrTaskNotFound
 	}
 	if userID != nil {
-		solved, _ := s.submissionRepo.HasSolved(ctx, *userID, chapterSlug, taskSlug)
-		task.Solved = &solved
+		submissions, err := s.submissionRepo.ListByUserAndTask(ctx, *userID, chapterSlug, taskSlug)
+		if err != nil {
+			s.log.Error("failed to get submissions", zap.Error(err))
+			return model.Task{}, err
+		}
+
+		for _, submission := range submissions {
+			if submission.Passed {
+				task.Solved = &submission.Passed
+				break
+			}
+		}
+		task.Submissions = submissions
+
 	}
 	return task, nil
 }

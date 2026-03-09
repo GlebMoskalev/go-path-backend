@@ -38,6 +38,8 @@ type Task struct {
 	ChapterSlug string `json:"chapter_slug,omitempty"`
 	// Solved: nil = не авторизован, true/false = авторизован
 	Solved *bool `json:"solved,omitempty"`
+	// Submissions: nil = не авторизован, []Submission = авторизован
+	Submissions []Submission `json:"submissions"`
 }
 
 type SubmitResult struct {
