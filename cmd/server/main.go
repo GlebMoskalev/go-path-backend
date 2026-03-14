@@ -82,6 +82,8 @@ func main() {
 	submissionService := service.NewSubmissionService(logger, taskService, sandboxService, submissionRepo, projectService)
 	aiService := service.NewAIService(logger, taskService, projectService, cfg.AIConfig)
 
+	statsService := service.NewStatsService(theoryService, taskService, projectService)
+
 	userHandler := handler.NewUserHandler(userService)
 	authHandler := handler.NewAuthHandler(authService)
 	theoryHandler := handler.NewTheoryHandler(theoryService)
@@ -89,6 +91,7 @@ func main() {
 	quizHandler := handler.NewQuizHandler(quizService)
 	projectHandler := handler.NewProjectHandler(projectService, submissionService)
 	aiHandler := handler.NewAIHandler(aiService)
+	statsHandler := handler.NewStatsHandler(statsService)
 
 	authMiddleware := middleware.NewAuthMiddleware(authService, userService)
 
@@ -110,6 +113,7 @@ func main() {
 
 			r.Get("/profile", userHandler.GetProfile)
 			r.Put("/profile", userHandler.UpdateProfile)
+			r.Get("/stats", statsHandler.GetStats)
 			r.Delete("/account", userHandler.DeleteAccount)
 		})
 

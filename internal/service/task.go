@@ -137,6 +137,33 @@ func (s *TaskService) GetTestFile(chapterSlug, taskSlug string) (string, error) 
 	return test, nil
 }
 
+func (s *TaskService) GetStats(ctx context.Context, userID uuid.UUID) model.TasksStats {
+	solvedSet := s.getSolvedSet(ctx, userID)
+
+	stats := model.TasksStats{}
+
+	for _, ch := range s.chapters {
+		total := len(ch.Tasks)
+		solved := 0
+		for _, t := range ch.Tasks {
+			if solvedSet[ch.Slug+"/"+t.Slug] {
+				solved++
+			}
+		}
+
+		stats.TotalTasks += total
+		stats.SolvedTasks += solved
+		stats.Chapters = append(stats.Chapters, model.TaskChapterStats{
+			Slug:   ch.Slug,
+			Title:  ch.Title,
+			Total:  total,
+			Solved: solved,
+		})
+	}
+
+	return stats
+}
+
 func (s *TaskService) load(fsys fs.FS, root string) error {
 	chapterDirs, err := fs.ReadDir(fsys, root)
 	if err != nil {

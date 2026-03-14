@@ -157,6 +157,33 @@ func (s *ProjectService) BuildSandboxFiles(projectSlug, stepSlug, userCode strin
 	return files, nil
 }
 
+func (s *ProjectService) GetStats(ctx context.Context, userID uuid.UUID) model.ProjectsStats {
+	solvedSet := s.getSolvedProjectSet(ctx, userID)
+
+	stats := model.ProjectsStats{}
+
+	for _, p := range s.projects {
+		total := len(p.Steps)
+		solved := 0
+		for _, step := range p.Steps {
+			if solvedSet[p.Slug+"/"+step.Slug] {
+				solved++
+			}
+		}
+
+		stats.TotalSteps += total
+		stats.SolvedSteps += solved
+		stats.Projects = append(stats.Projects, model.ProjectStatsItem{
+			Slug:   p.Slug,
+			Title:  p.Title,
+			Total:  total,
+			Solved: solved,
+		})
+	}
+
+	return stats
+}
+
 func (s *ProjectService) load(fsys fs.FS, root string) error {
 	projectDirs, err := fs.ReadDir(fsys, root)
 	if err != nil {

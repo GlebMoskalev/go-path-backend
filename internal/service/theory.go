@@ -174,6 +174,32 @@ func (s *TheoryService) MarkLessonCompleted(ctx context.Context, userID uuid.UUI
 	return s.progressRepo.MarkCompleted(ctx, userID, chapterSlug, lessonSlug)
 }
 
+func (s *TheoryService) GetStats(ctx context.Context, userID uuid.UUID) model.TheoryStats {
+	completed, err := s.progressRepo.GetCompletedTheories(ctx, userID)
+	if err != nil {
+		s.log.Error("failed to get completed theories for stats", zap.Error(err))
+		completed = make(map[string]map[string]bool)
+	}
+
+	stats := model.TheoryStats{}
+
+	for _, ch := range s.chapters {
+		total := len(ch.Lessons)
+		completedCount := len(completed[ch.Slug])
+
+		stats.TotalLessons += total
+		stats.CompletedLessons += completedCount
+		stats.Chapters = append(stats.Chapters, model.TheoryChapterStats{
+			Slug:      ch.Slug,
+			Title:     ch.Title,
+			Total:     total,
+			Completed: completedCount,
+		})
+	}
+
+	return stats
+}
+
 func (s *TheoryService) load(fsys fs.FS, root string) error {
 	chapterDirs, err := fs.ReadDir(fsys, root)
 	if err != nil {
