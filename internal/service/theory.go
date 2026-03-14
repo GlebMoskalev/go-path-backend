@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"io/fs"
 	"path/filepath"
@@ -8,6 +9,8 @@ import (
 	"strings"
 
 	"github.com/GlebMoskalev/go-path-backend/internal/model"
+	"github.com/GlebMoskalev/go-path-backend/internal/repository"
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
 )
@@ -18,15 +21,17 @@ var (
 )
 
 type TheoryService struct {
-	log      *zap.Logger
-	chapters []model.Chapter
-	lessons  map[string]map[string]model.Lesson
+	log          *zap.Logger
+	chapters     []model.Chapter
+	lessons      map[string]map[string]model.Lesson
+	progressRepo repository.TheoryProgressRepository
 }
 
-func NewTheoryService(fsys fs.FS, root string, log *zap.Logger) (*TheoryService, error) {
+func NewTheoryService(fsys fs.FS, root string, log *zap.Logger, progressRepo repository.TheoryProgressRepository) (*TheoryService, error) {
 	s := TheoryService{
-		log:     log,
-		lessons: make(map[string]map[string]model.Lesson),
+		log:          log,
+		lessons:      make(map[string]map[string]model.Lesson),
+		progressRepo: progressRepo,
 	}
 
 	if err := s.load(fsys, root); err != nil {
@@ -37,8 +42,18 @@ func NewTheoryService(fsys fs.FS, root string, log *zap.Logger) (*TheoryService,
 }
 
 // ListChapters возвращает все главы со списком уроков, но БЕЗ содержимого уроков
-func (s *TheoryService) ListChapters() []model.Chapter {
+func (s *TheoryService) ListChapters(ctx context.Context, userID *uuid.UUID) []model.Chapter {
 	result := make([]model.Chapter, len(s.chapters))
+
+	var completed map[string]map[string]bool
+	if userID != nil {
+		var err error
+		completed, err = s.progressRepo.GetCompletedTheories(ctx, *userID)
+		if err != nil {
+			s.log.Error("failed to get completed lessons", zap.Error(err))
+		}
+	}
+
 	for i, ch := range s.chapters {
 		result[i] = model.Chapter{
 			Slug:        ch.Slug,
@@ -46,6 +61,24 @@ func (s *TheoryService) ListChapters() []model.Chapter {
 			Description: ch.Description,
 			Order:       ch.Order,
 			Lessons:     stripContent(ch.Lessons),
+		}
+
+		if userID != nil {
+			total := len(ch.Lessons)
+			completedCount := 0
+			if completed[ch.Slug] != nil {
+				completedCount = len(completed[ch.Slug])
+			}
+
+			result[i].Progress = &model.ChapterProgress{
+				Total:     total,
+				Completed: completedCount,
+			}
+
+			for j := range result[i].Lessons {
+				isCompleted := completed[ch.Slug] != nil && completed[ch.Slug][result[i].Lessons[j].Slug]
+				result[i].Lessons[j].Completed = &isCompleted
+			}
 		}
 	}
 
@@ -55,25 +88,56 @@ func (s *TheoryService) ListChapters() []model.Chapter {
 // GetChapter — возвращает одну главу по её slug (например "01-basics").
 // Уроки включены, но без содержимого markdown.
 // Если глава не найдена — возвращает ErrChapterNotFound.
-func (s *TheoryService) GetChapter(slug string) (model.Chapter, error) {
+func (s *TheoryService) GetChapter(ctx context.Context, slug string, userID *uuid.UUID) (model.Chapter, error) {
+	var chapter model.Chapter
+	var found bool
+
 	for _, ch := range s.chapters {
 		if ch.Slug == slug {
-			return model.Chapter{
+			chapter = model.Chapter{
 				Slug:        ch.Slug,
 				Title:       ch.Title,
 				Description: ch.Description,
 				Order:       ch.Order,
 				Lessons:     stripContent(ch.Lessons),
-			}, nil
+			}
+			found = true
+			break
 		}
 	}
 
-	return model.Chapter{}, ErrChapterNotFound
+	if !found {
+		return chapter, ErrChapterNotFound
+	}
+
+	if userID != nil {
+		completed, err := s.progressRepo.GetCompletedTheories(ctx, *userID)
+		if err != nil {
+			s.log.Error("failed to get completed lessons", zap.Error(err))
+		} else {
+			total := len(chapter.Lessons)
+			completedCount := 0
+			if completed[slug] != nil {
+				completedCount = len(completed[slug])
+			}
+			chapter.Progress = &model.ChapterProgress{
+				Total:     total,
+				Completed: completedCount,
+			}
+
+			for i := range chapter.Lessons {
+				isCompleted := completed[slug] != nil && completed[slug][chapter.Lessons[i].Slug]
+				chapter.Lessons[i].Completed = &isCompleted
+			}
+		}
+	}
+
+	return chapter, nil
 }
 
 // GetLesson — возвращает один урок С содержимым markdown.
 // chapterSlug — slug главы, lessonSlug — slug урока.
-func (s *TheoryService) GetLesson(chapterSlug, lessonSlug string) (model.Lesson, error) {
+func (s *TheoryService) GetLesson(ctx context.Context, chapterSlug, lessonSlug string, userID *uuid.UUID) (model.Lesson, error) {
 	chapterLessons, ok := s.lessons[chapterSlug]
 	if !ok {
 		return model.Lesson{}, ErrChapterNotFound
@@ -84,7 +148,30 @@ func (s *TheoryService) GetLesson(chapterSlug, lessonSlug string) (model.Lesson,
 		return model.Lesson{}, ErrLessonNotFound
 	}
 
+	if userID != nil {
+		isCompleted, err := s.progressRepo.IsCompleted(ctx, *userID, chapterSlug, lessonSlug)
+		if err != nil {
+			s.log.Error("failed to check lesson completion", zap.Error(err))
+		} else {
+			lesson.Completed = &isCompleted
+		}
+	}
+
 	return lesson, nil
+}
+
+// MarkLessonCompleted отмечает урок как прочитанный
+func (s *TheoryService) MarkLessonCompleted(ctx context.Context, userID uuid.UUID, chapterSlug, lessonSlug string) error {
+	chapterLessons, ok := s.lessons[chapterSlug]
+	if !ok {
+		return ErrChapterNotFound
+	}
+
+	if _, ok := chapterLessons[lessonSlug]; !ok {
+		return ErrLessonNotFound
+	}
+
+	return s.progressRepo.MarkCompleted(ctx, userID, chapterSlug, lessonSlug)
 }
 
 func (s *TheoryService) load(fsys fs.FS, root string) error {

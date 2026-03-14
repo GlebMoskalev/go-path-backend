@@ -46,6 +46,7 @@ func main() {
 	userRepo := repository.NewUserRepository(pool)
 	stateRepo := repository.NewStateRepository(redisClient)
 	submissionRepo := repository.NewSubmissionRepository(pool)
+	theoryProgressRepo := repository.NewTheoryProgressRepository(pool)
 
 	authService := service.NewAuthService(
 		logger,
@@ -55,7 +56,7 @@ func main() {
 		cfg.JWT,
 	)
 	userService := service.NewUserService(logger, userRepo)
-	theoryService, err := service.NewTheoryService(content.TheoryFS, "theory", logger)
+	theoryService, err := service.NewTheoryService(content.TheoryFS, "theory", logger, theoryProgressRepo)
 	if err != nil {
 		logger.Fatal("failed to load theory", zap.Error(err))
 	}
@@ -113,9 +114,17 @@ func main() {
 		})
 
 		api.Route("/theory", func(r chi.Router) {
-			r.Get("/", theoryHandler.ListChapter)
-			r.Get("/{chapterSlug}", theoryHandler.GetChapter)
-			r.Get("/{chapterSlug}/{lessonSlug}", theoryHandler.GetLesson)
+			r.Group(func(r chi.Router) {
+				r.Use(authMiddleware.OptionalAuthenticate)
+				r.Get("/", theoryHandler.ListChapter)
+				r.Get("/{chapterSlug}", theoryHandler.GetChapter)
+				r.Get("/{chapterSlug}/{lessonSlug}", theoryHandler.GetLesson)
+			})
+
+			r.Group(func(r chi.Router) {
+				r.Use(authMiddleware.Authenticate)
+				r.Put("/{chapterSlug}/{lessonSlug}/complete", theoryHandler.MarkLessonCompleted)
+			})
 		})
 
 		api.Route("/tasks", func(r chi.Router) {

@@ -85,6 +85,9 @@ func (s *AIService) AnalyzePassedCodeTask(ctx context.Context, chapterSlug, task
 		MaxCompletionTokens: s.maxTokensTask,
 		Temperature:         s.temperature,
 		TopP:                s.topP,
+		ChatTemplateKwargs: map[string]any{
+			"enable_thinking": false,
+		},
 	})
 
 	if err != nil {

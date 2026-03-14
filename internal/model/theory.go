@@ -6,6 +6,13 @@ type Chapter struct {
 	Description string   `json:"description"`
 	Order       int      `json:"order"`
 	Lessons     []Lesson `json:"lessons"`
+	// Progress nil = не авторизован, иначе статистика
+	Progress *ChapterProgress `json:"progress,omitempty"`
+}
+
+type ChapterProgress struct {
+	Total     int `json:"total"`
+	Completed int `json:"completed"`
 }
 
 type Lesson struct {
@@ -15,6 +22,8 @@ type Lesson struct {
 	Order       int    `json:"order"`
 	ChapterSlug string `json:"chapter_slug,omitempty"`
 	Content     string `json:"content,omitempty"`
+	// Completed: nil = не авторизован, true/false = авторизован
+	Completed *bool `json:"completed,omitempty"`
 }
 
 type ChapterMeta struct {
