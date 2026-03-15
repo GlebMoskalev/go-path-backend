@@ -305,6 +305,19 @@ func (s *ProjectService) loadStep(fsys fs.FS, stepsPath, dirName, projectSlug st
 		return model.ProjectStep{}, nil, nil, err
 	}
 
+	completionsData, err := fs.ReadFile(fsys, filepath.Join(stepPath, "completions.yaml"))
+	if err != nil {
+		return model.ProjectStep{}, nil, nil, err
+	}
+	var completionsWrapper struct {
+		Completions []model.Completion `yaml:"completions"`
+	}
+	err = yaml.Unmarshal(completionsData, &completionsWrapper)
+	if err != nil {
+		return model.ProjectStep{}, nil, nil, err
+	}
+	completions := completionsWrapper.Completions
+
 	step := model.ProjectStep{
 		Slug:        dirName,
 		Title:       fm.Title,
@@ -315,6 +328,7 @@ func (s *ProjectService) loadStep(fsys fs.FS, stepsPath, dirName, projectSlug st
 		File:        fm.File,
 		Order:       fm.Order,
 		ProjectSlug: projectSlug,
+		Completions: completions,
 	}
 
 	if step.File == "" && len(refs) == 1 {

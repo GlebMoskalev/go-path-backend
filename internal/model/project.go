@@ -25,14 +25,15 @@ type Project struct {
 }
 
 type ProjectStep struct {
-	Slug        string   `json:"slug"`
-	Title       string   `json:"title"`
-	Description string   `json:"description,omitempty"`
-	Template    string   `json:"template,omitempty"`
-	Difficulty  string   `json:"difficulty"`
-	Hints       []string `json:"hints,omitempty"`
-	File        string   `json:"file,omitempty"`
-	Order       int      `json:"order"`
-	ProjectSlug string   `json:"project_slug,omitempty"`
-	Solved      *bool    `json:"solved,omitempty"`
+	Slug        string       `json:"slug"`
+	Title       string       `json:"title"`
+	Description string       `json:"description,omitempty"`
+	Template    string       `json:"template,omitempty"`
+	Difficulty  string       `json:"difficulty"`
+	Hints       []string     `json:"hints,omitempty"`
+	File        string       `json:"file,omitempty"`
+	Order       int          `json:"order"`
+	ProjectSlug string       `json:"project_slug,omitempty"`
+	Solved      *bool        `json:"solved,omitempty"`
+	Completions []Completion `json:"completions"`
 }

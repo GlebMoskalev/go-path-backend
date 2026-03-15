@@ -1,0 +1,16 @@
+completions:
+  - name: strings
+    doc: "Package strings implements simple functions to manipulate UTF-8 encoded strings"
+    symbols:
+      - name: Fields
+        kind: function
+        detail: "func Fields(s string) []string"
+        doc: "Fields splits the string s around each instance of one or more consecutive white space characters"
+      - name: Split
+        kind: function
+        detail: "func Split(s, sep string) []string"
+        doc: "Split slices s into all substrings separated by sep and returns a slice of the substrings"
+      - name: ToLower
+        kind: function
+        detail: "func ToLower(s string) string"
+        doc: "ToLower returns s with all Unicode letters mapped to their lower case"

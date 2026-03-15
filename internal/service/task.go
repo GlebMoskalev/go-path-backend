@@ -279,6 +279,19 @@ func (s *TaskService) loadTask(fsys fs.FS, chapterPath, dirName, chapterSlug str
 		return model.Task{}, "", err
 	}
 
+	completionsData, err := fs.ReadFile(fsys, filepath.Join(taskPath, "completions.yaml"))
+	if err != nil {
+		return model.Task{}, "", err
+	}
+	var completionsWrapper struct {
+		Completions []model.Completion `yaml:"completions"`
+	}
+	err = yaml.Unmarshal(completionsData, &completionsWrapper)
+	if err != nil {
+		return model.Task{}, "", err
+	}
+	completions := completionsWrapper.Completions
+
 	task := model.Task{
 		Slug:        dirName,
 		Title:       fm.Title,
@@ -287,6 +300,7 @@ func (s *TaskService) loadTask(fsys fs.FS, chapterPath, dirName, chapterSlug str
 		Difficulty:  fm.Difficulty,
 		Order:       fm.Order,
 		ChapterSlug: chapterSlug,
+		Completions: completions,
 	}
 
 	return task, string(testData), nil

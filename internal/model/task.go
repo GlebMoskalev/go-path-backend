@@ -40,6 +40,7 @@ type Task struct {
 	Solved *bool `json:"solved,omitempty"`
 	// Submissions: nil = не авторизован, []Submission = авторизован
 	Submissions []Submission `json:"submissions"`
+	Completions []Completion `json:"completions"`
 }
 
 type SubmitResult struct {

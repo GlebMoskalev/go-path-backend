@@ -1,0 +1,114 @@
+completions:
+  - name: encoding/json
+    doc: "Package json implements encoding and decoding of JSON"
+    symbols:
+      - name: NewDecoder
+        kind: function
+        detail: "func NewDecoder(r io.Reader) *Decoder"
+        doc: "NewDecoder returns a new decoder that reads from r"
+      - name: NewEncoder
+        kind: function
+        detail: "func NewEncoder(w io.Writer) *Encoder"
+        doc: "NewEncoder returns a new encoder that writes to w"
+      - name: Marshal
+        kind: function
+        detail: "func Marshal(v any) ([]byte, error)"
+        doc: "Marshal returns the JSON encoding of v"
+      - name: Unmarshal
+        kind: function
+        detail: "func Unmarshal(data []byte, v any) error"
+        doc: "Unmarshal parses the JSON-encoded data and stores the result in the value pointed to by v"
+  - name: errors
+    doc: "Package errors implements functions to manipulate errors"
+    symbols:
+      - name: Is
+        kind: function
+        detail: "func Is(err, target error) bool"
+        doc: "Is reports whether any error in err's tree matches target"
+      - name: New
+        kind: function
+        detail: "func New(text string) error"
+        doc: "New returns an error that formats as the given text"
+  - name: net/http
+    doc: "Package http provides HTTP client and server implementations"
+    symbols:
+      - name: NewServeMux
+        kind: function
+        detail: "func NewServeMux() *ServeMux"
+        doc: "NewServeMux allocates and returns a new ServeMux"
+      - name: StatusOK
+        kind: constant
+        detail: "const StatusOK = 200"
+        doc: "HTTP status code 200 OK"
+      - name: StatusCreated
+        kind: constant
+        detail: "const StatusCreated = 201"
+        doc: "HTTP status code 201 Created"
+      - name: StatusNoContent
+        kind: constant
+        detail: "const StatusNoContent = 204"
+        doc: "HTTP status code 204 No Content"
+      - name: StatusBadRequest
+        kind: constant
+        detail: "const StatusBadRequest = 400"
+        doc: "HTTP status code 400 Bad Request"
+      - name: StatusNotFound
+        kind: constant
+        detail: "const StatusNotFound = 404"
+        doc: "HTTP status code 404 Not Found"
+      - name: StatusInternalServerError
+        kind: constant
+        detail: "const StatusInternalServerError = 500"
+        doc: "HTTP status code 500 Internal Server Error"
+      - name: ResponseWriter
+        kind: type
+        detail: "type ResponseWriter interface"
+        doc: "A ResponseWriter interface is used by an HTTP handler to construct an HTTP response"
+      - name: Request
+        kind: type
+        detail: "type Request struct"
+        doc: "A Request represents an HTTP request received by a server or to be sent by a client"
+      - name: Handler
+        kind: type
+        detail: "type Handler interface"
+        doc: "A Handler responds to an HTTP request"
+  - name: strconv
+    doc: "Package strconv implements conversions to and from string representations of basic data types"
+    symbols:
+      - name: Atoi
+        kind: function
+        detail: "func Atoi(s string) (int, error)"
+        doc: "Atoi is equivalent to ParseInt(s, 10, 0), converted to type int"
+      - name: Itoa
+        kind: function
+        detail: "func Itoa(i int) string"
+        doc: "Itoa is equivalent to FormatInt(int64(i), 10)"
+  - name: todoapi/model
+    doc: "Package model contains data structures for Todo application"
+    symbols:
+      - name: Todo
+        kind: type
+        detail: "type Todo struct"
+        doc: "Todo represents a task with ID, Title, Description, Done status and CreatedAt timestamp"
+      - name: CreateTodoRequest
+        kind: type
+        detail: "type CreateTodoRequest struct"
+        doc: "CreateTodoRequest contains fields for creating a new todo"
+      - name: UpdateTodoRequest
+        kind: type
+        detail: "type UpdateTodoRequest struct"
+        doc: "UpdateTodoRequest contains optional fields for updating a todo"
+  - name: todoapi/service
+    doc: "Package service provides business logic for todo operations"
+    symbols:
+      - name: TodoService
+        kind: type
+        detail: "type TodoService struct"
+        doc: "TodoService handles business logic for todo operations"
+  - name: todoapi/storage
+    doc: "Package storage provides in-memory storage for todos"
+    symbols:
+      - name: ErrNotFound
+        kind: variable
+        detail: "var ErrNotFound = errors.New(\"todo not found\")"
+        doc: "ErrNotFound is returned when a todo is not found in storage"

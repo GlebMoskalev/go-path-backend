@@ -1,0 +1,27 @@
+completions:
+  - name: todoapi/model
+    doc: "Package model contains data structures for Todo application"
+    symbols:
+      - name: Todo
+        kind: type
+        detail: "type Todo struct"
+        doc: "Todo represents a task with ID, Title, Description, Done status and CreatedAt timestamp"
+      - name: CreateTodoRequest
+        kind: type
+        detail: "type CreateTodoRequest struct"
+        doc: "CreateTodoRequest contains fields for creating a new todo"
+      - name: UpdateTodoRequest
+        kind: type
+        detail: "type UpdateTodoRequest struct"
+        doc: "UpdateTodoRequest contains optional fields for updating a todo"
+  - name: todoapi/storage
+    doc: "Package storage provides in-memory storage for todos"
+    symbols:
+      - name: TodoStorage
+        kind: type
+        detail: "type TodoStorage struct"
+        doc: "TodoStorage provides thread-safe in-memory storage for todos"
+      - name: ErrNotFound
+        kind: variable
+        detail: "var ErrNotFound = errors.New(\"todo not found\")"
+        doc: "ErrNotFound is returned when a todo is not found in storage"

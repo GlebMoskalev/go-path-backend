@@ -1,0 +1,12 @@
+completions:
+  - name: time
+    doc: "Package time provides functionality for measuring and displaying time"
+    symbols:
+      - name: Time
+        kind: type
+        detail: "type Time struct"
+        doc: "A Time represents an instant in time with nanosecond precision"
+      - name: Now
+        kind: function
+        detail: "func Now() Time"
+        doc: "Now returns the current local time"

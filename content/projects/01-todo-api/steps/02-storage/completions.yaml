@@ -1,0 +1,41 @@
+completions:
+  - name: errors
+    doc: "Package errors implements functions to manipulate errors"
+    symbols:
+      - name: New
+        kind: function
+        detail: "func New(text string) error"
+        doc: "New returns an error that formats as the given text"
+  - name: sync
+    doc: "Package sync provides basic synchronization primitives"
+    symbols:
+      - name: RWMutex
+        kind: type
+        detail: "type RWMutex struct"
+        doc: "A RWMutex is a reader/writer mutual exclusion lock"
+      - name: Mutex
+        kind: type
+        detail: "type Mutex struct"
+        doc: "A Mutex is a mutual exclusion lock"
+  - name: time
+    doc: "Package time provides functionality for measuring and displaying time"
+    symbols:
+      - name: Now
+        kind: function
+        detail: "func Now() Time"
+        doc: "Now returns the current local time"
+  - name: todoapi/model
+    doc: "Package model contains data structures for Todo application"
+    symbols:
+      - name: Todo
+        kind: type
+        detail: "type Todo struct"
+        doc: "Todo represents a task with ID, Title, Description, Done status and CreatedAt timestamp"
+      - name: CreateTodoRequest
+        kind: type
+        detail: "type CreateTodoRequest struct"
+        doc: "CreateTodoRequest contains fields for creating a new todo"
+      - name: UpdateTodoRequest
+        kind: type
+        detail: "type UpdateTodoRequest struct"
+        doc: "UpdateTodoRequest contains optional fields for updating a todo"
