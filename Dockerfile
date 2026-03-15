@@ -14,6 +14,14 @@ FROM alpine:latest
 
 WORKDIR /app
 
+RUN apk add --no-cache go
+
+
+ENV GO111MODULE=on \
+    CGO_ENABLED=0 \
+    GOOS=linux \
+    GOARCH=amd64
+
 COPY --from=builder /app/server .
 COPY --from=builder /app/.env .
 

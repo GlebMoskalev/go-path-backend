@@ -6,14 +6,37 @@ completions:
         kind: type
         detail: "type Todo struct"
         doc: "Todo represents a task with ID, Title, Description, Done status and CreatedAt timestamp"
+        fields:
+          - name: ID
+            type: int
+          - name: Title
+            type: string
+          - name: Description
+            type: string
+          - name: Done
+            type: bool
+          - name: CreatedAt
+            type: time.Time
       - name: CreateTodoRequest
         kind: type
         detail: "type CreateTodoRequest struct"
         doc: "CreateTodoRequest contains fields for creating a new todo"
+        fields:
+          - name: Title
+            type: string
+          - name: Description
+            type: string
       - name: UpdateTodoRequest
         kind: type
         detail: "type UpdateTodoRequest struct"
         doc: "UpdateTodoRequest contains optional fields for updating a todo"
+        fields:
+          - name: Title
+            type: "*string"
+          - name: Description
+            type: "*string"
+          - name: Done
+            type: "*bool"
   - name: todoapi/storage
     doc: "Package storage provides in-memory storage for todos"
     symbols:
@@ -21,6 +44,22 @@ completions:
         kind: type
         detail: "type TodoStorage struct"
         doc: "TodoStorage provides thread-safe in-memory storage for todos"
+        fields:
+          - name: Create
+            type: "func(todo model.Todo) model.Todo"
+            doc: "Create adds a new todo and returns it with assigned ID"
+          - name: GetByID
+            type: "func(id int) (model.Todo, error)"
+            doc: "GetByID returns a todo by ID or ErrNotFound"
+          - name: GetAll
+            type: "func() []model.Todo"
+            doc: "GetAll returns all todos"
+          - name: Update
+            type: "func(id int, todo model.Todo) (model.Todo, error)"
+            doc: "Update updates a todo or returns ErrNotFound"
+          - name: Delete
+            type: "func(id int) error"
+            doc: "Delete removes a todo or returns ErrNotFound"
       - name: ErrNotFound
         kind: variable
         detail: "var ErrNotFound = errors.New(\"todo not found\")"

@@ -83,6 +83,7 @@ func main() {
 	aiService := service.NewAIService(logger, taskService, projectService, cfg.AIConfig)
 
 	statsService := service.NewStatsService(theoryService, taskService, projectService)
+	formatService := service.NewFormatService(logger)
 
 	userHandler := handler.NewUserHandler(userService)
 	authHandler := handler.NewAuthHandler(authService)
@@ -92,6 +93,7 @@ func main() {
 	projectHandler := handler.NewProjectHandler(projectService, submissionService)
 	aiHandler := handler.NewAIHandler(aiService)
 	statsHandler := handler.NewStatsHandler(statsService)
+	formatHandler := handler.NewFormatHandler(formatService)
 
 	authMiddleware := middleware.NewAuthMiddleware(authService, userService)
 
@@ -173,6 +175,12 @@ func main() {
 
 			r.Post("/task/{chapterSlug}/{taskSlug}", aiHandler.AnalyzePassedTask)
 			r.Post("/project/{projectSlug}/{stepSlug}", aiHandler.AnalyzePassedProject)
+		})
+
+		api.Route("/format", func(r chi.Router) {
+			r.Use(authMiddleware.Authenticate)
+
+			r.Post("/", formatHandler.FormatCode)
 		})
 	})
 

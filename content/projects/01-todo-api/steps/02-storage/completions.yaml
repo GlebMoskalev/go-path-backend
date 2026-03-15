@@ -13,10 +13,30 @@ completions:
         kind: type
         detail: "type RWMutex struct"
         doc: "A RWMutex is a reader/writer mutual exclusion lock"
+        fields:
+          - name: Lock
+            type: "func()"
+            doc: "Lock locks rw for writing"
+          - name: Unlock
+            type: "func()"
+            doc: "Unlock unlocks rw for writing"
+          - name: RLock
+            type: "func()"
+            doc: "RLock locks rw for reading"
+          - name: RUnlock
+            type: "func()"
+            doc: "RUnlock undoes a single RLock call"
       - name: Mutex
         kind: type
         detail: "type Mutex struct"
         doc: "A Mutex is a mutual exclusion lock"
+        fields:
+          - name: Lock
+            type: "func()"
+            doc: "Lock locks m"
+          - name: Unlock
+            type: "func()"
+            doc: "Unlock unlocks m"
   - name: time
     doc: "Package time provides functionality for measuring and displaying time"
     symbols:
@@ -24,6 +44,10 @@ completions:
         kind: function
         detail: "func Now() Time"
         doc: "Now returns the current local time"
+      - name: Time
+        kind: type
+        detail: "type Time struct"
+        doc: "A Time represents an instant in time with nanosecond precision"
   - name: todoapi/model
     doc: "Package model contains data structures for Todo application"
     symbols:
@@ -31,11 +55,44 @@ completions:
         kind: type
         detail: "type Todo struct"
         doc: "Todo represents a task with ID, Title, Description, Done status and CreatedAt timestamp"
+        fields:
+          - name: ID
+            type: int
+            doc: "Unique identifier"
+          - name: Title
+            type: string
+            doc: "Task title"
+          - name: Description
+            type: string
+            doc: "Task description"
+          - name: Done
+            type: bool
+            doc: "Completion status"
+          - name: CreatedAt
+            type: time.Time
+            doc: "Creation timestamp"
       - name: CreateTodoRequest
         kind: type
         detail: "type CreateTodoRequest struct"
         doc: "CreateTodoRequest contains fields for creating a new todo"
+        fields:
+          - name: Title
+            type: string
+            doc: "Task title"
+          - name: Description
+            type: string
+            doc: "Task description"
       - name: UpdateTodoRequest
         kind: type
         detail: "type UpdateTodoRequest struct"
         doc: "UpdateTodoRequest contains optional fields for updating a todo"
+        fields:
+          - name: Title
+            type: "*string"
+            doc: "Optional task title"
+          - name: Description
+            type: "*string"
+            doc: "Optional task description"
+          - name: Done
+            type: "*bool"
+            doc: "Optional completion status"
