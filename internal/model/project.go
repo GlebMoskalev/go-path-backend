@@ -37,3 +37,9 @@ type ProjectStep struct {
 	Solved      *bool        `json:"solved,omitempty"`
 	Completions []Completion `json:"completions"`
 }
+
+type FormatContext struct {
+	GoMod    string
+	Files    map[string]string
+	FilePath string
+}

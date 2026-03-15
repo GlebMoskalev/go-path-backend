@@ -83,7 +83,7 @@ func main() {
 	aiService := service.NewAIService(logger, taskService, projectService, cfg.AIConfig)
 
 	statsService := service.NewStatsService(theoryService, taskService, projectService)
-	formatService := service.NewFormatService(logger)
+	formatService := service.NewFormatService(logger, projectService)
 
 	userHandler := handler.NewUserHandler(userService)
 	authHandler := handler.NewAuthHandler(authService)
@@ -181,6 +181,7 @@ func main() {
 			r.Use(authMiddleware.Authenticate)
 
 			r.Post("/", formatHandler.FormatCode)
+			r.Post("/{projectSlug}/{stepSlug}", formatHandler.FormatProjectCode)
 		})
 	})
 

@@ -124,6 +124,34 @@ func (s *ProjectService) GetStep(ctx context.Context, projectSlug, stepSlug stri
 	return step, nil
 }
 
+func (s *ProjectService) GetFormatContext(projectSlug, stepSlug string) (*model.FormatContext, error) {
+	goMod, ok := s.goMods[projectSlug]
+	if !ok {
+		return nil, ErrProjectNotFound
+	}
+
+	currentStep, ok := s.steps[projectSlug][stepSlug]
+	if !ok {
+		return nil, ErrProjectStepNotFound
+	}
+
+	files := make(map[string]string)
+	for _, slug := range s.stepOrder[projectSlug] {
+		if slug == stepSlug {
+			continue
+		}
+		for path, content := range s.references[projectSlug][slug] {
+			files[path] = content
+		}
+	}
+
+	return &model.FormatContext{
+		GoMod:    goMod,
+		Files:    files,
+		FilePath: currentStep.File,
+	}, nil
+}
+
 func (s *ProjectService) BuildSandboxFiles(projectSlug, stepSlug, userCode string) (map[string]string, error) {
 	goMod, ok := s.goMods[projectSlug]
 	if !ok {
