@@ -99,7 +99,19 @@ func (s *AIService) AnalyzePassedCodeTask(ctx context.Context, chapterSlug, task
 		s.log.Error("empty choices from LLM")
 		return "", errors.New("empty response from AI")
 	}
-	return chatResp.Choices[0].Message.Content, nil
+
+	content := chatResp.Choices[0].Message.Content
+	if strings.TrimSpace(content) == "" {
+		s.log.Warn("LLM returned empty content",
+			zap.String("model", s.modelPassedTests),
+			zap.String("finishReason", string(chatResp.Choices[0].FinishReason)),
+			zap.Int("promptTokens", chatResp.Usage.PromptTokens),
+			zap.Int("completionTokens", chatResp.Usage.CompletionTokens),
+		)
+		return "", errors.New("AI returned empty recommendation")
+	}
+
+	return content, nil
 }
 
 func (s *AIService) AnalyzePassedCodeProject(ctx context.Context, projectSlug, stepSlug, code string, userID uuid.UUID) (string, error) {
@@ -145,5 +157,16 @@ func (s *AIService) AnalyzePassedCodeProject(ctx context.Context, projectSlug, s
 		return "", errors.New("empty response from AI")
 	}
 
-	return chatResp.Choices[0].Message.Content, nil
+	content := chatResp.Choices[0].Message.Content
+	if strings.TrimSpace(content) == "" {
+		s.log.Warn("LLM returned empty content",
+			zap.String("model", s.modelPassedTests),
+			zap.String("finishReason", string(chatResp.Choices[0].FinishReason)),
+			zap.Int("promptTokens", chatResp.Usage.PromptTokens),
+			zap.Int("completionTokens", chatResp.Usage.CompletionTokens),
+		)
+		return "", errors.New("AI returned empty recommendation")
+	}
+
+	return content, nil
 }
