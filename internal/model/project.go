@@ -36,6 +36,7 @@ type ProjectStep struct {
 	ProjectSlug string       `json:"project_slug,omitempty"`
 	Solved      *bool        `json:"solved,omitempty"`
 	Completions []Completion `json:"completions"`
+	Submissions []Submission `json:"submissions"`
 }
 
 type FormatContext struct {

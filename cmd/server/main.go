@@ -149,10 +149,13 @@ func main() {
 		})
 
 		api.Route("/quiz", func(r chi.Router) {
-			r.Use(authMiddleware.Authenticate)
 			r.Get("/chapters", quizHandler.ListChapters)
-			r.Get("/", quizHandler.GetQuestions)
-			r.Post("/answer", quizHandler.CheckAnswer)
+
+			r.Group(func(r chi.Router) {
+				r.Use(authMiddleware.Authenticate)
+				r.Get("/", quizHandler.GetQuestions)
+				r.Post("/answer", quizHandler.CheckAnswer)
+			})
 		})
 
 		api.Route("/projects", func(r chi.Router) {

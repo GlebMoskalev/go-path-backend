@@ -118,8 +118,21 @@ func (s *ProjectService) GetStep(ctx context.Context, projectSlug, stepSlug stri
 		return model.ProjectStep{}, ErrProjectStepNotFound
 	}
 	if userID != nil {
-		solved, _ := s.submissionRepo.HasSolved(ctx, *userID, projectSlug, stepSlug)
-		step.Solved = &solved
+		submissions, err := s.submissionRepo.ListByUserAndTask(ctx, *userID, projectSlug, stepSlug)
+		if err != nil {
+			s.log.Error("failed to get submissions", zap.Error(err))
+			return model.ProjectStep{}, err
+		}
+
+		for _, submission := range submissions {
+			if submission.Passed {
+				step.Solved = &submission.Passed
+				break
+			}
+		}
+
+		step.Submissions = submissions
+
 	}
 	return step, nil
 }
