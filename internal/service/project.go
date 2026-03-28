@@ -294,6 +294,7 @@ func (s *ProjectService) loadProject(fsys fs.FS, root, dirName string) (model.Pr
 			s.log.Warn("skipping step", zap.String("dir", sd.Name()), zap.Error(err))
 			continue
 		}
+		step.ProjectTitle = meta.Title
 		steps = append(steps, step)
 		s.steps[dirName][step.Slug] = step
 		s.references[dirName][step.Slug] = refs

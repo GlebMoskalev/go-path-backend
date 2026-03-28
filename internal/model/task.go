@@ -29,13 +29,14 @@ type TaskChapter struct {
 }
 
 type Task struct {
-	Slug        string `json:"slug"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	Template    string `json:"template,omitempty"`
-	Difficulty  string `json:"difficulty"`
-	Order       int    `json:"order"`
-	ChapterSlug string `json:"chapter_slug,omitempty"`
+	Slug         string `json:"slug"`
+	Title        string `json:"title"`
+	Description  string `json:"description"`
+	Template     string `json:"template,omitempty"`
+	Difficulty   string `json:"difficulty"`
+	Order        int    `json:"order"`
+	ChapterSlug  string `json:"chapter_slug,omitempty"`
+	ChapterTitle string `json:"chapter_title,omitempty"`
 	// Solved: nil = не авторизован, true/false = авторизован
 	Solved *bool `json:"solved,omitempty"`
 	// Submissions: nil = не авторизован, []Submission = авторизован

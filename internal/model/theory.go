@@ -16,12 +16,13 @@ type ChapterProgress struct {
 }
 
 type Lesson struct {
-	Slug        string `json:"slug"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	Order       int    `json:"order"`
-	ChapterSlug string `json:"chapter_slug,omitempty"`
-	Content     string `json:"content,omitempty"`
+	Slug         string `json:"slug"`
+	Title        string `json:"title"`
+	Description  string `json:"description"`
+	Order        int    `json:"order"`
+	ChapterSlug  string `json:"chapter_slug,omitempty"`
+	ChapterTitle string `json:"chapter_title,omitempty"`
+	Content      string `json:"content,omitempty"`
 	// Completed: nil = не авторизован, true/false = авторизован
 	Completed *bool `json:"completed,omitempty"`
 }

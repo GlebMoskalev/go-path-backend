@@ -244,7 +244,7 @@ func (s *TaskService) loadChapter(fsys fs.FS, root, dirName string) (model.TaskC
 			s.log.Warn("skipping task", zap.String("dir", td.Name()), zap.Error(err))
 			continue
 		}
-
+		task.ChapterTitle = chapter.Title
 		tasks = append(tasks, task)
 		tests[task.Slug] = testContent
 	}

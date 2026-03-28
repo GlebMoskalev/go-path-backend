@@ -270,6 +270,7 @@ func (s *TheoryService) loadChapter(fsys fs.FS, root, dirName string) (model.Cha
 			s.log.Warn("skipping lesson", zap.String("file", f.Name()), zap.Error(err))
 			continue
 		}
+		lesson.ChapterTitle = chapter.Title
 		lessons = append(lessons, lesson)
 	}
 
