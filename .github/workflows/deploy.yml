@@ -1,0 +1,38 @@
+name: Deploy Backend on VM
+on:
+  push:
+    branches:
+      - main
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create archive
+        uses: tar -czf app.tar.gz --exclude='.git' --exclude='.idea'
+
+      - name: Copy archive to VM
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "app.tar.gz"
+          target: "/opt/go-path"
+
+      - name: Extract archive and start Docker Compose
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /opt/go-path
+            tar -xzf app.tar.gz
+            rm app.tar.gz
+            echo "${{ secrets.ENV_FILE }}" > .env
+            docker compose down
+            docker compose up -d --build
+            docker image prune -a -f
