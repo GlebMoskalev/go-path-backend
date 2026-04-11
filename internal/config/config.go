@@ -75,6 +75,8 @@ type AIConfig struct {
 	UserPromptTask      string  `mapstructure:"AI_USER_PROMPT_TASK"`
 	SystemPromptProject string  `mapstructure:"AI_SYSTEM_PROMPT_PROJECT"`
 	UserPromptProject   string  `mapstructure:"AI_USER_PROMPT_PROJECT"`
+	SystemPromptError   string  `mapstructure:"AI_SYSTEM_PROMPT_ERROR"`
+	UserPromptError     string  `mapstructure:"AI_USER_PROMPT_ERROR"`
 }
 
 func LoadConfig() (*Config, error) {

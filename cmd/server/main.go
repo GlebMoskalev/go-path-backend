@@ -178,6 +178,8 @@ func main() {
 
 			r.Post("/task/{chapterSlug}/{taskSlug}", aiHandler.AnalyzePassedTask)
 			r.Post("/project/{projectSlug}/{stepSlug}", aiHandler.AnalyzePassedProject)
+			r.Post("/error/task/{chapterSlug}/{taskSlug}", aiHandler.AnalyzeErrorTask)
+			r.Post("/error/project/{projectSlug}/{stepSlug}", aiHandler.AnalyzeErrorProject)
 		})
 
 		api.Route("/format", func(r chi.Router) {
