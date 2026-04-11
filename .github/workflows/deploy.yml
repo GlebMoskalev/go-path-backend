@@ -11,7 +11,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Create archive
-        run: tar -czf app.tar.gz --exclude='.git' --exclude='.idea' .
+        run: tar -czf /tmp/app.tar.gz --exclude='.git' --exclude='.idea' .
 
       - name: Copy archive to VM
         uses: appleboy/scp-action@v0.1.7
@@ -19,7 +19,7 @@ jobs:
           host: ${{ secrets.VM_HOST }}
           username: ${{ secrets.VM_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "app.tar.gz"
+          source: "/tmp/app.tar.gz"
           target: "/opt/go-path"
 
       - name: Extract archive and start Docker Compose
