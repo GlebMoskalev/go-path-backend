@@ -12,8 +12,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Create archive
+      - name: Prepare environment and create archive
+        env:
+          ENV_SECRET: ${{ secrets.ENV_FILE }}
         run: |
+          echo "$ENV_SECRET" > .env
+          
           tar -czf /tmp/app.tar.gz --exclude='.git' --exclude='.idea' .
           mv /tmp/app.tar.gz ./app.tar.gz
 
@@ -26,7 +30,7 @@ jobs:
           source: "app.tar.gz"
           target: "/opt/go-path"
 
-      - name: Extract archive and start Docker Compose
+      - name: Extract archive and restart Docker
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VM_HOST }}
@@ -34,9 +38,14 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd /opt/go-path
+            
+            # Распаковываем архив. К этому моменту файл .env уже будет внутри!
             tar -xzf app.tar.gz
             rm app.tar.gz
-            echo "${{ secrets.ENV_FILE }}" > .env
+            
+            # Останавливаем старые контейнеры и поднимаем новые
             docker compose down
             docker compose up -d --build
+            
+            # Очищаем старые неиспользуемые образы
             docker image prune -a -f
