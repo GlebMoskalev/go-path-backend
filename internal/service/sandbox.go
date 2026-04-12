@@ -18,11 +18,12 @@ import (
 )
 
 type SandboxService struct {
-	log     *zap.Logger
-	docker  *client.Client
-	image   string
-	timeOut time.Duration
-	memory  int64
+	log      *zap.Logger
+	docker   *client.Client
+	image    string
+	timeOut  time.Duration
+	memory   int64
+	nanoCPUs int64
 }
 
 func NewSandboxService(log *zap.Logger, sandboxCfg config.SandboxConfig) (*SandboxService, error) {
@@ -37,11 +38,12 @@ func NewSandboxService(log *zap.Logger, sandboxCfg config.SandboxConfig) (*Sandb
 	}
 
 	return &SandboxService{
-		log:     log,
-		docker:  docker,
-		image:   sandboxCfg.Image,
-		timeOut: sandboxCfg.Timeout,
-		memory:  sandboxCfg.Memory,
+		log:      log,
+		docker:   docker,
+		image:    sandboxCfg.Image,
+		timeOut:  sandboxCfg.Timeout,
+		memory:   sandboxCfg.Memory,
+		nanoCPUs: sandboxCfg.NanoCPUs,
 	}, nil
 }
 
@@ -76,7 +78,7 @@ func (s *SandboxService) run(ctx context.Context, files map[string]string) model
 		NetworkMode: "none",
 		Resources: container.Resources{
 			Memory:   s.memory,
-			NanoCPUs: 500000000,
+			NanoCPUs: s.nanoCPUs,
 		},
 	}, nil, nil, "")
 	if err != nil {

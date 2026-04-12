@@ -61,6 +61,7 @@ type SandboxConfig struct {
 	Timeout    time.Duration `mapstructure:"-"`
 	TimeoutStr string        `mapstructure:"SANDBOX_TIMEOUT"`
 	Memory     int64         `mapstructure:"SANDBOX_MEMORY"`
+	NanoCPUs   int64         `mapstructure:"SANDBOX_NANO_CPUS"`
 }
 
 type AIConfig struct {
