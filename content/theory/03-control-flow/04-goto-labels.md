@@ -1,10 +1,10 @@
 ---
-title: "Метки, goto и defer в циклах"
-description: "break/continue с метками, goto (когда допустим), defer в циклах — ловушка"
+title: "Метки и goto"
+description: "break/continue с метками, goto (когда допустим)"
 order: 4
 ---
 
-# Метки, goto и defer в циклах
+# Метки и goto
 
 ## break и continue с метками
 
@@ -205,78 +205,6 @@ func processFile(path string) error {
 
 ---
 
-## defer в циклах — ловушка
-
-`defer` откладывает выполнение до момента **возврата из функции**, а не до конца текущей итерации цикла. Это приводит к классической ошибке.
-
-### Проблема: накопление ресурсов
-
-```go
-// ОПАСНЫЙ КОД:
-func processFiles(paths []string) error {
-    for _, path := range paths {
-        f, err := os.Open(path)
-        if err != nil {
-            return err
-        }
-        defer f.Close()  // ОШИБКА: все файлы закроются только при выходе из функции!
-
-        if err := process(f); err != nil {
-            return err
-        }
-    }
-    return nil
-}
-```
-
-Если в `paths` 1000 файлов, все они будут открыты одновременно до завершения функции. Это потенциальное исчерпание файловых дескрипторов.
-
-### Правильное решение: вынести в отдельную функцию
-
-```go
-func processOneFile(path string) error {
-    f, err := os.Open(path)
-    if err != nil {
-        return err
-    }
-    defer f.Close()  // теперь закроется при выходе из processOneFile
-
-    return process(f)
-}
-
-func processFiles(paths []string) error {
-    for _, path := range paths {
-        if err := processOneFile(path); err != nil {
-            return err
-        }
-    }
-    return nil
-}
-```
-
-### Альтернатива: явное закрытие
-
-```go
-func processFiles(paths []string) error {
-    for _, path := range paths {
-        f, err := os.Open(path)
-        if err != nil {
-            return err
-        }
-
-        err = process(f)
-        f.Close()  // явное закрытие сразу
-
-        if err != nil {
-            return err
-        }
-    }
-    return nil
-}
-```
-
----
-
 ## Итог
 
 **Метки:**
@@ -287,9 +215,4 @@ func processFiles(paths []string) error {
 **goto:**
 - Поддерживается, но используется крайне редко
 - Нельзя прыгать через объявление переменных
-- Почти всегда есть лучшее решение через `defer` или функцию
-
-**defer в циклах:**
-- `defer` выполняется при выходе из **функции**, не из итерации
-- `defer` в цикле накапливает отложенные вызовы — потенциальная утечка ресурсов
-- Решение: вынести тело цикла в отдельную функцию
+- Почти всегда есть лучшее решение через функцию или структуру кода
