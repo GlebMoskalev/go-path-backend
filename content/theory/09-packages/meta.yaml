@@ -1,0 +1,3 @@
+title: "Пакеты и модули"
+description: "Объявление пакетов, Go Modules, стандартная библиотека и internal-пакеты"
+order: 9

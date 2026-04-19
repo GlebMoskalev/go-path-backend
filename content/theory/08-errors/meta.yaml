@@ -1,0 +1,3 @@
+title: "Обработка ошибок"
+description: "Тип error, кастомные ошибки, wrapping, errors.Is/As, panic и recover"
+order: 8
