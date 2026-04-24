@@ -1,0 +1,15 @@
+completions:
+  - name: errors
+    doc: "Package errors implements functions to manipulate errors"
+    symbols:
+      - name: As
+        kind: function
+        detail: "func As(err error, target any) bool"
+        doc: "As finds the first error in err's chain that matches target, and if one is found, sets target to that error value and returns true"
+  - name: fmt
+    doc: "Package fmt implements formatted I/O"
+    symbols:
+      - name: Sprintf
+        kind: function
+        detail: "func Sprintf(format string, a ...any) string"
+        doc: "Sprintf formats according to a format specifier and returns the resulting string"

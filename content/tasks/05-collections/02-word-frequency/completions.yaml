@@ -1,0 +1,8 @@
+completions:
+  - name: strings
+    doc: "Package strings implements simple functions to manipulate UTF-8 encoded strings"
+    symbols:
+      - name: Fields
+        kind: function
+        detail: "func Fields(s string) []string"
+        doc: "Fields splits the string s around each instance of one or more consecutive white space characters"

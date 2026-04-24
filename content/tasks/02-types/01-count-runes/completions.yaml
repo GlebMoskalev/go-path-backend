@@ -1,0 +1,8 @@
+completions:
+  - name: unicode/utf8
+    doc: "Package utf8 implements functions and constants to support text encoded in UTF-8"
+    symbols:
+      - name: RuneCountInString
+        kind: function
+        detail: "func RuneCountInString(s string) (n int)"
+        doc: "RuneCountInString is like RuneCount but its input is a string"

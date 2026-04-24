@@ -1,0 +1,8 @@
+completions:
+  - name: sync
+    doc: "Package sync provides basic synchronization primitives"
+    symbols:
+      - name: WaitGroup
+        kind: type
+        detail: "type WaitGroup struct"
+        doc: "A WaitGroup waits for a collection of goroutines to finish. Use Add to set the number of goroutines to wait for, Done to signal completion, and Wait to block until all are done."

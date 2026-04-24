@@ -1,0 +1,12 @@
+completions:
+  - name: fmt
+    doc: "Package fmt implements formatted I/O"
+    symbols:
+      - name: Sprintf
+        kind: function
+        detail: "func Sprintf(format string, a ...any) string"
+        doc: "Sprintf formats according to a format specifier and returns the resulting string"
+      - name: Stringer
+        kind: interface
+        detail: "type Stringer interface { String() string }"
+        doc: "Stringer is implemented by any value that has a String method, which defines the native format for that value"

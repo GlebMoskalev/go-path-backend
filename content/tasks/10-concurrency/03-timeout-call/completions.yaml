@@ -1,0 +1,12 @@
+completions:
+  - name: time
+    doc: "Package time provides functionality for measuring and displaying time"
+    symbols:
+      - name: After
+        kind: function
+        detail: "func After(d Duration) <-chan Time"
+        doc: "After waits for the duration to elapse and then sends the current time on the returned channel"
+      - name: Millisecond
+        kind: const
+        detail: "const Millisecond Duration = 1000 * Microsecond"
+        doc: "Common duration constants"

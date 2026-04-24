@@ -1,0 +1,12 @@
+completions:
+  - name: sort
+    doc: "Package sort provides primitives for sorting slices and user-defined collections"
+    symbols:
+      - name: Interface
+        kind: interface
+        detail: "type Interface interface { Len() int; Less(i, j int) bool; Swap(i, j int) }"
+        doc: "An implementation of Interface can be sorted by the routines in this package"
+      - name: Sort
+        kind: function
+        detail: "func Sort(data Interface)"
+        doc: "Sort sorts data in ascending order as determined by the Less method"

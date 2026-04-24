@@ -1,0 +1,3 @@
+title: "Task Manager REST API"
+description: "Построй REST API с PostgreSQL: модели, база данных, HTTP handlers, middleware и тесты"
+order: 1

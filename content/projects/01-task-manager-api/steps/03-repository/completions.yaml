@@ -1,0 +1,62 @@
+completions:
+  - name: database/sql
+    doc: "Package sql provides a generic interface around SQL databases"
+    symbols:
+      - name: DB
+        kind: type
+        detail: "type DB struct"
+        doc: "DB is a database handle representing a pool of zero or more underlying connections"
+        fields:
+          - name: QueryRowContext
+            type: "func(ctx context.Context, query string, args ...any) *Row"
+            doc: "QueryRowContext executes a prepared query statement with the given arguments"
+          - name: QueryContext
+            type: "func(ctx context.Context, query string, args ...any) (*Rows, error)"
+            doc: "QueryContext executes a query that returns rows"
+          - name: ExecContext
+            type: "func(ctx context.Context, query string, args ...any) (Result, error)"
+            doc: "ExecContext executes a query without returning any rows"
+      - name: Row
+        kind: type
+        detail: "type Row struct"
+        doc: "Row is the result of calling QueryRow to select a single row"
+        fields:
+          - name: Scan
+            type: "func(dest ...any) error"
+            doc: "Scan copies the columns from the matched row into the values pointed at by dest"
+      - name: Rows
+        kind: type
+        detail: "type Rows struct"
+        doc: "Rows is the result of a query"
+        fields:
+          - name: Next
+            type: "func() bool"
+            doc: "Next prepares the next result row for reading with the Scan method"
+          - name: Scan
+            type: "func(dest ...any) error"
+            doc: "Scan copies the columns in the current row into the values pointed at by dest"
+          - name: Close
+            type: "func() error"
+            doc: "Close closes the Rows, preventing further enumeration"
+          - name: Err
+            type: "func() error"
+            doc: "Err returns the error, if any, that was encountered during iteration"
+      - name: Result
+        kind: type
+        detail: "type Result interface"
+        doc: "Result summarizes an executed SQL command"
+        fields:
+          - name: RowsAffected
+            type: "func() (int64, error)"
+            doc: "RowsAffected returns the number of rows affected by an update, insert, or delete"
+      - name: ErrNoRows
+        kind: variable
+        detail: "var ErrNoRows = errors.New(\"sql: no rows in result set\")"
+        doc: "ErrNoRows is returned by Scan when QueryRow doesn't return a row"
+  - name: fmt
+    doc: "Package fmt implements formatted I/O"
+    symbols:
+      - name: Errorf
+        kind: function
+        detail: "func Errorf(format string, a ...any) error"
+        doc: "Errorf formats according to a format specifier and returns the string as a value that satisfies error"

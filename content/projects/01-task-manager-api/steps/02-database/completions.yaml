@@ -1,0 +1,33 @@
+completions:
+  - name: database/sql
+    doc: "Package sql provides a generic interface around SQL databases"
+    symbols:
+      - name: Open
+        kind: function
+        detail: "func Open(driverName, dataSourceName string) (*DB, error)"
+        doc: "Open opens a database specified by its driver name and data source name. Open may just validate its arguments without creating a connection."
+      - name: DB
+        kind: type
+        detail: "type DB struct"
+        doc: "DB is a database handle representing a pool of zero or more underlying connections"
+        fields:
+          - name: Ping
+            type: "func() error"
+            doc: "Ping verifies a connection to the database is still alive, establishing a connection if necessary"
+          - name: Exec
+            type: "func(query string, args ...any) (Result, error)"
+            doc: "Exec executes a query without returning any rows"
+          - name: Close
+            type: "func() error"
+            doc: "Close closes the database and prevents new queries from starting"
+      - name: ErrNoRows
+        kind: variable
+        detail: "var ErrNoRows = errors.New(\"sql: no rows in result set\")"
+        doc: "ErrNoRows is returned by Scan when QueryRow doesn't return a row"
+  - name: github.com/jackc/pgx/v5/stdlib
+    doc: "Package stdlib provides a database/sql compatible driver for pgx"
+    symbols:
+      - name: OpenDB
+        kind: function
+        detail: "func OpenDB(config pgx.ConnConfig) *sql.DB"
+        doc: "OpenDB opens a database using pgx as the driver. Register the pgx driver with sql.Register before use via side-effect import"

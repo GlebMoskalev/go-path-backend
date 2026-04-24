@@ -1,0 +1,42 @@
+completions:
+  - name: net/http
+    doc: "Package http provides HTTP client and server implementations"
+    symbols:
+      - name: Handler
+        kind: type
+        detail: "type Handler interface { ServeHTTP(ResponseWriter, *Request) }"
+        doc: "A Handler responds to an HTTP request"
+      - name: HandlerFunc
+        kind: type
+        detail: "type HandlerFunc func(ResponseWriter, *Request)"
+        doc: "The HandlerFunc type is an adapter to allow the use of ordinary functions as HTTP handlers"
+      - name: ResponseWriter
+        kind: type
+        detail: "type ResponseWriter interface"
+        doc: "A ResponseWriter interface is used by an HTTP handler to construct an HTTP response"
+        fields:
+          - name: WriteHeader
+            type: "func(statusCode int)"
+            doc: "WriteHeader sends an HTTP response header with the provided status code. If WriteHeader is not called explicitly, the first call to Write will trigger WriteHeader(http.StatusOK)"
+      - name: StatusInternalServerError
+        kind: variable
+        detail: "const StatusInternalServerError = 500"
+        doc: "HTTP 500 Internal Server Error"
+  - name: time
+    doc: "Package time provides functionality for measuring and displaying time"
+    symbols:
+      - name: Now
+        kind: function
+        detail: "func Now() Time"
+        doc: "Now returns the current local time"
+      - name: Since
+        kind: function
+        detail: "func Since(t Time) Duration"
+        doc: "Since returns the time elapsed since t"
+  - name: log
+    doc: "Package log implements a simple logging package"
+    symbols:
+      - name: Printf
+        kind: function
+        detail: "func Printf(format string, v ...any)"
+        doc: "Printf calls Output to print to the logger. Arguments are handled in the manner of fmt.Printf"

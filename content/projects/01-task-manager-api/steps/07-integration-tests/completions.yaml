@@ -1,0 +1,40 @@
+completions:
+  - name: net/http/httptest
+    doc: "Package httptest provides utilities for HTTP testing"
+    symbols:
+      - name: NewServer
+        kind: function
+        detail: "func NewServer(handler http.Handler) *Server"
+        doc: "NewServer starts and returns a new Server. The caller should call Close when finished, to shut it down"
+        fields:
+          - name: URL
+            type: "string"
+            doc: "URL is the base URL of the form http://ipaddr:port with no trailing slash"
+          - name: Close
+            type: "func()"
+            doc: "Close shuts down the server and blocks until all outstanding requests on this server have completed"
+  - name: github.com/testcontainers/testcontainers-go/modules/postgres
+    doc: "Package postgres provides a testcontainers module for PostgreSQL"
+    symbols:
+      - name: RunContainer
+        kind: function
+        detail: "func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*PostgresContainer, error)"
+        doc: "RunContainer creates an instance of the postgres container type"
+        fields:
+          - name: ConnectionString
+            type: "func(ctx context.Context, args ...string) (string, error)"
+            doc: "ConnectionString returns the connection string for the postgres container, using the default 5432 port"
+          - name: Terminate
+            type: "func(ctx context.Context) error"
+            doc: "Terminate stops and removes the container"
+  - name: github.com/testcontainers/testcontainers-go
+    doc: "Package testcontainers provides utilities for running Docker containers in tests"
+    symbols:
+      - name: WithImage
+        kind: function
+        detail: "func WithImage(image string) CustomizeRequestOption"
+        doc: "WithImage sets the image for a container"
+      - name: WithWaitStrategy
+        kind: function
+        detail: "func WithWaitStrategy(strategies ...wait.Strategy) CustomizeRequestOption"
+        doc: "WithWaitStrategy sets the wait strategy for a container"

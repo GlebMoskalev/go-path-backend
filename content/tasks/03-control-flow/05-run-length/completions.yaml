@@ -1,0 +1,15 @@
+completions:
+  - name: fmt
+    doc: "Package fmt implements formatted I/O"
+    symbols:
+      - name: Sprintf
+        kind: function
+        detail: "func Sprintf(format string, a ...any) string"
+        doc: "Sprintf formats according to a format specifier and returns the resulting string"
+  - name: strings
+    doc: "Package strings implements simple functions to manipulate UTF-8 encoded strings"
+    symbols:
+      - name: Builder
+        kind: type
+        detail: "type Builder struct"
+        doc: "A Builder is used to efficiently build a string using Write methods. It minimizes memory copying."
