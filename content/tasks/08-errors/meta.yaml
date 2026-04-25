@@ -1,0 +1,3 @@
+title: "Обработка ошибок"
+description: "Кастомные ошибки, wrapping, panic и recover"
+order: 8

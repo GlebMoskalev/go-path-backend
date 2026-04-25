@@ -1,0 +1,64 @@
+completions:
+  - name: encoding/json
+    doc: "Package json implements encoding and decoding of JSON"
+    symbols:
+      - name: NewDecoder
+        kind: function
+        detail: "func NewDecoder(r io.Reader) *Decoder"
+        doc: "NewDecoder returns a new decoder that reads from r"
+        fields:
+          - name: Decode
+            type: "func(v any) error"
+            doc: "Decode reads the next JSON-encoded value from its input and stores it in the value pointed to by v"
+      - name: NewEncoder
+        kind: function
+        detail: "func NewEncoder(w io.Writer) *Encoder"
+        doc: "NewEncoder returns a new encoder that writes to w"
+        fields:
+          - name: Encode
+            type: "func(v any) error"
+            doc: "Encode writes the JSON encoding of v to the stream"
+  - name: net/http
+    doc: "Package http provides HTTP client and server implementations"
+    symbols:
+      - name: ResponseWriter
+        kind: type
+        detail: "type ResponseWriter interface"
+        doc: "A ResponseWriter interface is used by an HTTP handler to construct an HTTP response"
+        fields:
+          - name: Header
+            type: "func() Header"
+            doc: "Header returns the header map that will be sent by WriteHeader"
+          - name: Write
+            type: "func([]byte) (int, error)"
+            doc: "Write writes the data to the connection as part of an HTTP reply"
+          - name: WriteHeader
+            type: "func(statusCode int)"
+            doc: "WriteHeader sends an HTTP response header with the provided status code"
+      - name: StatusCreated
+        kind: variable
+        detail: "const StatusCreated = 201"
+        doc: "HTTP 201 Created"
+      - name: StatusNoContent
+        kind: variable
+        detail: "const StatusNoContent = 204"
+        doc: "HTTP 204 No Content"
+      - name: StatusBadRequest
+        kind: variable
+        detail: "const StatusBadRequest = 400"
+        doc: "HTTP 400 Bad Request"
+      - name: StatusNotFound
+        kind: variable
+        detail: "const StatusNotFound = 404"
+        doc: "HTTP 404 Not Found"
+      - name: StatusInternalServerError
+        kind: variable
+        detail: "const StatusInternalServerError = 500"
+        doc: "HTTP 500 Internal Server Error"
+  - name: strconv
+    doc: "Package strconv implements conversions to and from string representations"
+    symbols:
+      - name: ParseInt
+        kind: function
+        detail: "func ParseInt(s string, base int, bitSize int) (i int64, err error)"
+        doc: "ParseInt interprets a string s in the given base (0, 2 to 36) and bit size (0 to 64) and returns the corresponding value i"

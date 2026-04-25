@@ -1,0 +1,8 @@
+completions:
+  - name: strconv
+    doc: "Package strconv implements conversions to and from string representations of basic data types"
+    symbols:
+      - name: Itoa
+        kind: function
+        detail: "func Itoa(i int) string"
+        doc: "Itoa is equivalent to FormatInt(int64(i), 10)"

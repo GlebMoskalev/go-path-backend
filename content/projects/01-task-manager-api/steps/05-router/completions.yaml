@@ -1,0 +1,24 @@
+completions:
+  - name: net/http
+    doc: "Package http provides HTTP client and server implementations"
+    symbols:
+      - name: NewServeMux
+        kind: function
+        detail: "func NewServeMux() *ServeMux"
+        doc: "NewServeMux allocates and returns a new ServeMux"
+        fields:
+          - name: HandleFunc
+            type: "func(pattern string, handler func(ResponseWriter, *Request))"
+            doc: "HandleFunc registers the handler function for the given pattern. In Go 1.22+, pattern can include method: \"GET /path\""
+      - name: ListenAndServe
+        kind: function
+        detail: "func ListenAndServe(addr string, handler Handler) error"
+        doc: "ListenAndServe listens on the TCP network address addr and then calls Serve with handler to handle requests on incoming connections"
+      - name: Handler
+        kind: type
+        detail: "type Handler interface { ServeHTTP(ResponseWriter, *Request) }"
+        doc: "A Handler responds to an HTTP request"
+      - name: HandlerFunc
+        kind: type
+        detail: "type HandlerFunc func(ResponseWriter, *Request)"
+        doc: "The HandlerFunc type is an adapter to allow the use of ordinary functions as HTTP handlers"

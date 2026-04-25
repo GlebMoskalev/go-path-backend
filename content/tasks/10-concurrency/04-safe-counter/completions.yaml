@@ -1,0 +1,12 @@
+completions:
+  - name: sync
+    doc: "Package sync provides basic synchronization primitives"
+    symbols:
+      - name: Mutex
+        kind: type
+        detail: "type Mutex struct"
+        doc: "A Mutex is a mutual exclusion lock. Use Lock to acquire the lock and Unlock to release it. Defer Unlock after Lock for safety."
+      - name: WaitGroup
+        kind: type
+        detail: "type WaitGroup struct"
+        doc: "A WaitGroup waits for a collection of goroutines to finish"

@@ -1,0 +1,3 @@
+title: "Конкурентность"
+description: "Горутины, каналы, select, sync-пакет, паттерны конкурентности и race detector"
+order: 10

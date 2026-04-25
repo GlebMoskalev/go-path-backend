@@ -1,0 +1,67 @@
+completions:
+  - name: net/http/httptest
+    doc: "Package httptest provides utilities for HTTP testing"
+    symbols:
+      - name: NewServer
+        kind: function
+        detail: "func NewServer(handler http.Handler) *Server"
+        doc: "NewServer starts and returns a new Server"
+        fields:
+          - name: URL
+            type: "string"
+            doc: "URL is the base URL of the form http://ipaddr:port with no trailing slash"
+          - name: Close
+            type: "func()"
+            doc: "Close shuts down the server"
+  - name: database/sql
+    doc: "Package sql provides a generic interface around SQL databases"
+    symbols:
+      - name: Open
+        kind: function
+        detail: "func Open(driverName, dataSourceName string) (*DB, error)"
+        doc: "Open opens a database specified by its driver name and data source name"
+      - name: DB
+        kind: type
+        detail: "type DB struct"
+        doc: "DB is a database handle representing a pool of zero or more underlying connections"
+        fields:
+          - name: Exec
+            type: "func(query string, args ...any) (Result, error)"
+            doc: "Exec executes a query without returning any rows"
+          - name: Ping
+            type: "func() error"
+            doc: "Ping verifies a connection to the database is still alive"
+          - name: Close
+            type: "func() error"
+            doc: "Close closes the database"
+  - name: testing
+    doc: "Package testing provides support for automated testing"
+    symbols:
+      - name: T
+        kind: type
+        detail: "type T struct"
+        doc: "T is a type passed to Test functions to manage test state"
+        fields:
+          - name: Helper
+            type: "func()"
+            doc: "Helper marks the calling function as a test helper"
+          - name: Fatalf
+            type: "func(format string, args ...any)"
+            doc: "Fatalf is equivalent to Logf followed by FailNow"
+          - name: Cleanup
+            type: "func(f func())"
+            doc: "Cleanup registers a function to be called when the test completes"
+  - name: math/rand
+    doc: "Package rand implements pseudo-random number generators"
+    symbols:
+      - name: Intn
+        kind: function
+        detail: "func Intn(n int) int"
+        doc: "Intn returns, as an int, a non-negative pseudo-random number in [0,n)"
+  - name: time
+    doc: "Package time provides functionality for measuring and displaying time"
+    symbols:
+      - name: Now
+        kind: function
+        detail: "func Now() Time"
+        doc: "Now returns the current local time"
