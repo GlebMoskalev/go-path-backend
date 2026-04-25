@@ -1,75 +1,17 @@
 package integration
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"strings"
 	"testing"
-	"time"
 
-	"taskmanager/db"
-	"taskmanager/handler"
-	"taskmanager/middleware"
 	"taskmanager/model"
-	"taskmanager/repository"
-	"taskmanager/server"
-
-	testcontainers "github.com/testcontainers/testcontainers-go"
-	tcpostgres "github.com/testcontainers/testcontainers-go/modules/postgres"
-	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-func setupTestServer(t *testing.T) *httptest.Server {
-	t.Helper()
-	ctx := context.Background()
-
-	container, err := tcpostgres.RunContainer(ctx,
-		testcontainers.WithImage("postgres:16-alpine"),
-		tcpostgres.WithDatabase("testdb"),
-		tcpostgres.WithUsername("postgres"),
-		tcpostgres.WithPassword("postgres"),
-		testcontainers.WithWaitStrategy(
-			wait.ForLog("database system is ready to accept connections").
-				WithOccurrence(2).
-				WithStartupTimeout(30*time.Second),
-		),
-	)
-	if err != nil {
-		t.Fatalf("start postgres: %v", err)
-	}
-	t.Cleanup(func() { container.Terminate(ctx) })
-
-	connStr, err := container.ConnectionString(ctx, "sslmode=disable")
-	if err != nil {
-		t.Fatalf("connection string: %v", err)
-	}
-
-	database, err := db.New(connStr)
-	if err != nil {
-		t.Fatalf("db.New: %v", err)
-	}
-	if err := db.Migrate(database); err != nil {
-		t.Fatalf("db.Migrate: %v", err)
-	}
-
-	repo := repository.New(database)
-	h := handler.New(repo)
-	router := server.NewRouter(h)
-	srv := httptest.NewServer(middleware.Chain(router, middleware.Logger, middleware.Recovery))
-
-	t.Cleanup(func() {
-		srv.Close()
-		database.Close()
-	})
-
-	return srv
-}
-
 func TestHealthCheck(t *testing.T) {
-	srv := setupTestServer(t)
+	srv := SetupTestServer(t)
 
 	resp, err := http.Get(srv.URL + "/health")
 	if err != nil {
@@ -86,15 +28,15 @@ func TestHealthCheck(t *testing.T) {
 		t.Fatalf("decode: %v", err)
 	}
 	if body["status"] != "ok" {
-		t.Errorf("status = %q, want %q", body["status"], "ok")
+		t.Errorf("status field = %q, want %q", body["status"], "ok")
 	}
 }
 
 func TestCreateAndGetTask(t *testing.T) {
-	srv := setupTestServer(t)
+	srv := SetupTestServer(t)
 
 	resp, err := http.Post(srv.URL+"/tasks", "application/json",
-		strings.NewReader(`{"title":"Test task","description":"Some description"}`))
+		strings.NewReader(`{"title":"Integration task","description":"Some description"}`))
 	if err != nil {
 		t.Fatalf("POST /tasks: %v", err)
 	}
@@ -109,7 +51,7 @@ func TestCreateAndGetTask(t *testing.T) {
 		t.Fatalf("decode create response: %v", err)
 	}
 	if created.ID == 0 {
-		t.Error("created.ID = 0, want non-zero")
+		t.Fatal("created.ID = 0, want non-zero")
 	}
 
 	resp2, err := http.Get(fmt.Sprintf("%s/tasks/%d", srv.URL, created.ID))
@@ -126,13 +68,16 @@ func TestCreateAndGetTask(t *testing.T) {
 	if err := json.NewDecoder(resp2.Body).Decode(&got); err != nil {
 		t.Fatalf("decode get response: %v", err)
 	}
-	if got.Title != "Test task" {
-		t.Errorf("Title = %q, want %q", got.Title, "Test task")
+	if got.Title != "Integration task" {
+		t.Errorf("Title = %q, want %q", got.Title, "Integration task")
+	}
+	if got.Status != model.StatusPending {
+		t.Errorf("Status = %q, want %q", got.Status, model.StatusPending)
 	}
 }
 
 func TestListTasks(t *testing.T) {
-	srv := setupTestServer(t)
+	srv := SetupTestServer(t)
 
 	for _, title := range []string{"Task A", "Task B", "Task C"} {
 		resp, err := http.Post(srv.URL+"/tasks", "application/json",
@@ -163,7 +108,7 @@ func TestListTasks(t *testing.T) {
 }
 
 func TestUpdateTask(t *testing.T) {
-	srv := setupTestServer(t)
+	srv := SetupTestServer(t)
 
 	resp, err := http.Post(srv.URL+"/tasks", "application/json",
 		strings.NewReader(`{"title":"Original","description":""}`))
@@ -171,12 +116,17 @@ func TestUpdateTask(t *testing.T) {
 		t.Fatalf("create: %v", err)
 	}
 	var created model.Task
-	json.NewDecoder(resp.Body).Decode(&created)
+	if err := json.NewDecoder(resp.Body).Decode(&created); err != nil {
+		t.Fatalf("decode create: %v", err)
+	}
 	resp.Body.Close()
 
-	req, _ := http.NewRequest(http.MethodPut,
+	req, err := http.NewRequest(http.MethodPut,
 		fmt.Sprintf("%s/tasks/%d", srv.URL, created.ID),
 		strings.NewReader(`{"title":"Updated","description":"New desc","status":"in_progress"}`))
+	if err != nil {
+		t.Fatalf("build PUT: %v", err)
+	}
 	req.Header.Set("Content-Type", "application/json")
 
 	resp2, err := http.DefaultClient.Do(req)
@@ -190,7 +140,9 @@ func TestUpdateTask(t *testing.T) {
 	}
 
 	var updated model.Task
-	json.NewDecoder(resp2.Body).Decode(&updated)
+	if err := json.NewDecoder(resp2.Body).Decode(&updated); err != nil {
+		t.Fatalf("decode update: %v", err)
+	}
 	if updated.Title != "Updated" {
 		t.Errorf("Title = %q, want %q", updated.Title, "Updated")
 	}
@@ -200,7 +152,7 @@ func TestUpdateTask(t *testing.T) {
 }
 
 func TestDeleteTask(t *testing.T) {
-	srv := setupTestServer(t)
+	srv := SetupTestServer(t)
 
 	resp, err := http.Post(srv.URL+"/tasks", "application/json",
 		strings.NewReader(`{"title":"To delete"}`))
@@ -208,11 +160,16 @@ func TestDeleteTask(t *testing.T) {
 		t.Fatalf("create: %v", err)
 	}
 	var created model.Task
-	json.NewDecoder(resp.Body).Decode(&created)
+	if err := json.NewDecoder(resp.Body).Decode(&created); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
 	resp.Body.Close()
 
-	req, _ := http.NewRequest(http.MethodDelete,
+	req, err := http.NewRequest(http.MethodDelete,
 		fmt.Sprintf("%s/tasks/%d", srv.URL, created.ID), nil)
+	if err != nil {
+		t.Fatalf("build DELETE: %v", err)
+	}
 	resp2, err := http.DefaultClient.Do(req)
 	if err != nil {
 		t.Fatalf("DELETE: %v", err)
@@ -223,7 +180,10 @@ func TestDeleteTask(t *testing.T) {
 		t.Errorf("delete status = %d, want %d", resp2.StatusCode, http.StatusNoContent)
 	}
 
-	resp3, _ := http.Get(fmt.Sprintf("%s/tasks/%d", srv.URL, created.ID))
+	resp3, err := http.Get(fmt.Sprintf("%s/tasks/%d", srv.URL, created.ID))
+	if err != nil {
+		t.Fatalf("GET after delete: %v", err)
+	}
 	defer resp3.Body.Close()
 	if resp3.StatusCode != http.StatusNotFound {
 		t.Errorf("get after delete = %d, want %d", resp3.StatusCode, http.StatusNotFound)
@@ -231,7 +191,7 @@ func TestDeleteTask(t *testing.T) {
 }
 
 func TestValidation(t *testing.T) {
-	srv := setupTestServer(t)
+	srv := SetupTestServer(t)
 
 	resp, err := http.Post(srv.URL+"/tasks", "application/json",
 		strings.NewReader(`{"title":""}`))

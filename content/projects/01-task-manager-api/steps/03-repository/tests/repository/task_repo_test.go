@@ -2,57 +2,66 @@ package repository
 
 import (
 	"context"
+	"database/sql"
+	"fmt"
+	"math/rand"
 	"testing"
 	"time"
 
 	"taskmanager/db"
 	"taskmanager/model"
 
-	testcontainers "github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/modules/postgres"
-	"github.com/testcontainers/testcontainers-go/wait"
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
-func setupTestDB(t *testing.T) *TaskRepository {
+const baseDSN = "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable"
+
+func setupTestRepo(t *testing.T) *TaskRepository {
 	t.Helper()
-	ctx := context.Background()
 
-	container, err := postgres.RunContainer(ctx,
-		testcontainers.WithImage("postgres:16-alpine"),
-		postgres.WithDatabase("testdb"),
-		postgres.WithUsername("postgres"),
-		postgres.WithPassword("postgres"),
-		testcontainers.WithWaitStrategy(
-			wait.ForLog("database system is ready to accept connections").
-				WithOccurrence(2).
-				WithStartupTimeout(30*time.Second),
-		),
-	)
+	base, err := sql.Open("pgx", baseDSN)
 	if err != nil {
-		t.Fatalf("start postgres: %v", err)
+		t.Fatalf("open base db: %v", err)
 	}
-	t.Cleanup(func() { container.Terminate(ctx) })
-
-	connStr, err := container.ConnectionString(ctx, "sslmode=disable")
-	if err != nil {
-		t.Fatalf("connection string: %v", err)
+	if err := base.Ping(); err != nil {
+		base.Close()
+		t.Fatalf("PostgreSQL недоступен на localhost:5432: %v", err)
 	}
 
-	database, err := db.New(connStr)
+	dbName := fmt.Sprintf("t_%d_%d", time.Now().UnixNano(), rand.Intn(1<<30))
+	if _, err := base.Exec("CREATE DATABASE " + dbName); err != nil {
+		base.Close()
+		t.Fatalf("create db: %v", err)
+	}
+	base.Close()
+
+	dsn := fmt.Sprintf("postgres://postgres:postgres@localhost:5432/%s?sslmode=disable", dbName)
+	database, err := db.New(dsn)
 	if err != nil {
 		t.Fatalf("db.New: %v", err)
 	}
-	t.Cleanup(func() { database.Close() })
-
 	if err := db.Migrate(database); err != nil {
 		t.Fatalf("db.Migrate: %v", err)
 	}
+
+	t.Cleanup(func() {
+		database.Close()
+		cleanup, err := sql.Open("pgx", baseDSN)
+		if err != nil {
+			return
+		}
+		defer cleanup.Close()
+		cleanup.Exec(fmt.Sprintf(
+			"SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '%s'",
+			dbName))
+		cleanup.Exec("DROP DATABASE IF EXISTS " + dbName)
+	})
 
 	return New(database)
 }
 
 func TestCreateAndGetByID(t *testing.T) {
-	repo := setupTestDB(t)
+	repo := setupTestRepo(t)
 	ctx := context.Background()
 
 	task := model.NewTask("Deploy app", "Set up CI/CD")
@@ -63,18 +72,27 @@ func TestCreateAndGetByID(t *testing.T) {
 		t.Fatalf("Create: %v", err)
 	}
 	if created.ID == 0 {
-		t.Error("created.ID = 0, want non-zero")
+		t.Error("created.ID = 0, want non-zero — RETURNING id не сработал")
 	}
 	if created.CreatedAt.IsZero() {
-		t.Error("created.CreatedAt is zero")
+		t.Error("created.CreatedAt is zero — RETURNING created_at не сработал")
+	}
+	if created.UpdatedAt.IsZero() {
+		t.Error("created.UpdatedAt is zero — RETURNING updated_at не сработал")
 	}
 
 	got, err := repo.GetByID(ctx, created.ID)
 	if err != nil {
 		t.Fatalf("GetByID(%d): %v", created.ID, err)
 	}
-	if got.Title != task.Title {
-		t.Errorf("Title = %q, want %q", got.Title, task.Title)
+	if got.ID != created.ID {
+		t.Errorf("ID = %d, want %d", got.ID, created.ID)
+	}
+	if got.Title != "Deploy app" {
+		t.Errorf("Title = %q, want %q", got.Title, "Deploy app")
+	}
+	if got.Description != "Set up CI/CD" {
+		t.Errorf("Description = %q, want %q", got.Description, "Set up CI/CD")
 	}
 	if got.Status != model.StatusPending {
 		t.Errorf("Status = %q, want %q", got.Status, model.StatusPending)
@@ -82,7 +100,7 @@ func TestCreateAndGetByID(t *testing.T) {
 }
 
 func TestGetByIDNotFound(t *testing.T) {
-	repo := setupTestDB(t)
+	repo := setupTestRepo(t)
 	ctx := context.Background()
 
 	_, err := repo.GetByID(ctx, 99999)
@@ -92,7 +110,7 @@ func TestGetByIDNotFound(t *testing.T) {
 }
 
 func TestListEmpty(t *testing.T) {
-	repo := setupTestDB(t)
+	repo := setupTestRepo(t)
 	ctx := context.Background()
 
 	tasks, err := repo.List(ctx)
@@ -108,13 +126,15 @@ func TestListEmpty(t *testing.T) {
 }
 
 func TestListReturnsAll(t *testing.T) {
-	repo := setupTestDB(t)
+	repo := setupTestRepo(t)
 	ctx := context.Background()
 
-	for _, title := range []string{"Task A", "Task B", "Task C"} {
-		if _, err := repo.Create(ctx, model.NewTask(title, "")); err != nil {
+	titles := []string{"Task A", "Task B", "Task C"}
+	for _, title := range titles {
+		if _, err := repo.Create(ctx, model.NewTask(title, "desc-"+title)); err != nil {
 			t.Fatalf("Create %q: %v", title, err)
 		}
+		time.Sleep(2 * time.Millisecond)
 	}
 
 	tasks, err := repo.List(ctx)
@@ -122,12 +142,28 @@ func TestListReturnsAll(t *testing.T) {
 		t.Fatalf("List: %v", err)
 	}
 	if len(tasks) != 3 {
-		t.Errorf("List() len = %d, want 3", len(tasks))
+		t.Fatalf("List() len = %d, want 3", len(tasks))
+	}
+
+	got := map[string]bool{}
+	for _, task := range tasks {
+		got[task.Title] = true
+	}
+	for _, want := range titles {
+		if !got[want] {
+			t.Errorf("title %q отсутствует в результате List", want)
+		}
+	}
+
+	if !tasks[0].CreatedAt.After(tasks[len(tasks)-1].CreatedAt) &&
+		!tasks[0].CreatedAt.Equal(tasks[len(tasks)-1].CreatedAt) {
+		t.Errorf("List должен сортировать ORDER BY created_at DESC: первая=%v, последняя=%v",
+			tasks[0].CreatedAt, tasks[len(tasks)-1].CreatedAt)
 	}
 }
 
 func TestUpdate(t *testing.T) {
-	repo := setupTestDB(t)
+	repo := setupTestRepo(t)
 	ctx := context.Background()
 
 	task := model.NewTask("Old title", "Old desc")
@@ -135,8 +171,11 @@ func TestUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Create: %v", err)
 	}
+	originalUpdatedAt := created.UpdatedAt
+	time.Sleep(2 * time.Millisecond)
 
 	created.Title = "New title"
+	created.Description = "New desc"
 	created.Status = model.StatusInProgress
 	updated, err := repo.Update(ctx, created)
 	if err != nil {
@@ -145,16 +184,40 @@ func TestUpdate(t *testing.T) {
 	if updated.Title != "New title" {
 		t.Errorf("Title = %q, want %q", updated.Title, "New title")
 	}
+	if updated.Description != "New desc" {
+		t.Errorf("Description = %q, want %q", updated.Description, "New desc")
+	}
 	if updated.Status != model.StatusInProgress {
 		t.Errorf("Status = %q, want %q", updated.Status, model.StatusInProgress)
 	}
-	if updated.UpdatedAt.IsZero() {
-		t.Error("UpdatedAt is zero after update")
+	if !updated.UpdatedAt.After(originalUpdatedAt) {
+		t.Errorf("UpdatedAt не обновился: было %v, стало %v", originalUpdatedAt, updated.UpdatedAt)
+	}
+
+	stored, err := repo.GetByID(ctx, created.ID)
+	if err != nil {
+		t.Fatalf("GetByID after Update: %v", err)
+	}
+	if stored.Title != "New title" {
+		t.Errorf("в БД Title = %q, want %q (Update не сохранился)", stored.Title, "New title")
+	}
+	if stored.Status != model.StatusInProgress {
+		t.Errorf("в БД Status = %q, want %q", stored.Status, model.StatusInProgress)
+	}
+}
+
+func TestUpdateNotFound(t *testing.T) {
+	repo := setupTestRepo(t)
+	ctx := context.Background()
+
+	ghost := model.Task{ID: 99999, Title: "ghost", Status: model.StatusPending}
+	if _, err := repo.Update(ctx, ghost); err == nil {
+		t.Error("Update(несуществующий) = nil, want error")
 	}
 }
 
 func TestDelete(t *testing.T) {
-	repo := setupTestDB(t)
+	repo := setupTestRepo(t)
 	ctx := context.Background()
 
 	task, err := repo.Create(ctx, model.NewTask("To delete", ""))
@@ -173,7 +236,7 @@ func TestDelete(t *testing.T) {
 }
 
 func TestDeleteNotFound(t *testing.T) {
-	repo := setupTestDB(t)
+	repo := setupTestRepo(t)
 	ctx := context.Background()
 
 	if err := repo.Delete(ctx, 99999); err == nil {

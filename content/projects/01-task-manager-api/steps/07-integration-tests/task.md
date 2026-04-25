@@ -2,12 +2,12 @@
 title: "Интеграционные тесты"
 difficulty: hard
 order: 7
-file: "integration_test.go"
+file: "integration/setup_test.go"
 hints:
-  - "testcontainers поднимает реальный PostgreSQL в Docker — никаких моков"
+  - "PostgreSQL предустановлен в sandbox-образе на localhost:5432 (пользователь postgres/postgres)"
+  - "Каждый тест должен получать свою изолированную БД — создавай через CREATE DATABASE"
   - "httptest.NewServer запускает настоящий HTTP сервер для тестов"
-  - "Каждый тест получает свежую БД через setupTestServer"
-  - "t.Cleanup регистрирует завершение контейнера и сервера автоматически"
+  - "t.Cleanup регистрирует завершение сервера и удаление БД автоматически"
 ---
 
 # Интеграционные тесты
@@ -19,59 +19,86 @@ hints:
 - Тестируют SQL-запросы на реальной СУБД
 - Проверяют сериализацию/десериализацию JSON end-to-end
 
-`testcontainers-go` запускает настоящий PostgreSQL в Docker-контейнере. Контейнер создаётся для каждого теста и автоматически завершается через `t.Cleanup`.
+В этом проекте PostgreSQL уже работает в sandbox-окружении на `localhost:5432` (пользователь и пароль — `postgres`). Твоя задача — для каждого теста поднять изолированную БД, собрать стек и вернуть HTTP-сервер.
 
-## Что нужно реализовать
+## Что нужно сделать
 
-### Вспомогательная функция `setupTestServer`
+Напиши helper `SetupTestServer`. Готовые сценарные тесты будут вызывать его и проверять стек через HTTP-запросы.
+
+### Функция `SetupTestServer`
 
 ```go
-func setupTestServer(t *testing.T) *httptest.Server
+package integration
+
+func SetupTestServer(t *testing.T) *httptest.Server
 ```
 
-Поднимает полный стек:
-1. PostgreSQL контейнер через testcontainers
-2. `db.New` + `db.Migrate`
-3. `repository.New`
-4. `handler.New`
-5. `server.NewRouter` обёрнутый в `middleware.Chain(router, middleware.Logger, middleware.Recovery)`
-6. `httptest.NewServer(handler)` — настоящий HTTP сервер на случайном порту
+Должна сделать:
 
-Регистрируй завершение через `t.Cleanup`.
+1. **Подключиться к базовой БД и создать уникальную:**
+   ```go
+   const baseDSN = "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable"
 
-### Тесты (минимум 6)
+   base, _ := sql.Open("pgx", baseDSN)
+   defer base.Close()
+
+   dbName := fmt.Sprintf("t_%d_%d", time.Now().UnixNano(), rand.Intn(1<<30))
+   base.Exec("CREATE DATABASE " + dbName)
+   ```
+
+2. **Подключиться к новой БД и мигрировать:**
+   ```go
+   testDSN := fmt.Sprintf("postgres://postgres:postgres@localhost:5432/%s?sslmode=disable", dbName)
+   database, _ := db.New(testDSN)
+   db.Migrate(database)
+   ```
+
+3. **Собрать стек:**
+   ```go
+   repo := repository.New(database)
+   h := handler.New(repo)
+   router := server.NewRouter(h)
+   fullHandler := middleware.Chain(router, middleware.Logger, middleware.Recovery)
+   ```
+
+4. **Запустить httptest и зарегистрировать cleanup:**
+   ```go
+   srv := httptest.NewServer(fullHandler)
+   t.Cleanup(func() {
+       srv.Close()
+       database.Close()
+       // удаляем тестовую БД
+       cleanup, _ := sql.Open("pgx", baseDSN)
+       defer cleanup.Close()
+       cleanup.Exec("SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '" + dbName + "'")
+       cleanup.Exec("DROP DATABASE IF EXISTS " + dbName)
+   })
+   return srv
+   ```
+
+## Требования
+
+- Функция **экспортируемая** (`SetupTestServer` с большой буквы) — вызывается из `scenarios_test.go`
+- Каждый вызов создаёт **новую БД** с уникальным именем — тесты не должны видеть данные друг друга
+- Cleanup обязательно: закрыть сервер, закрыть соединение, удалить БД
+- Перед `DROP DATABASE` нужен `pg_terminate_backend` — иначе DROP не сработает из-за активных соединений
+- Используй `t.Helper()` и `t.Fatalf` для понятного stack trace при ошибке
+
+## Как это проверяется
+
+Готовые сценарные тесты в том же пакете `integration` проверят твой helper через HTTP:
 
 | Тест | Что проверяет |
 |------|---------------|
 | `TestHealthCheck` | GET /health → 200, body `{"status":"ok"}` |
-| `TestCreateAndGetTask` | POST создаёт задачу, GET /tasks/{id} возвращает её |
-| `TestListTasks` | Создать 3 задачи, GET /tasks возвращает все |
-| `TestUpdateTask` | Создать, PUT обновить, проверить изменения |
-| `TestDeleteTask` | Создать, DELETE, GET возвращает 404 |
+| `TestCreateAndGetTask` | POST → 201, GET/{id} → 200 с теми же полями |
+| `TestListTasks` | 3 создания, GET /tasks → массив из 3 |
+| `TestUpdateTask` | POST → PUT → проверка изменений |
+| `TestDeleteTask` | POST → DELETE → GET возвращает 404 |
 | `TestValidation` | POST с пустым title → 400 |
 
-## Требования
+Все шесть тестов вызывают твой `SetupTestServer(t)` для получения свежего сервера с чистой БД. Если хотя бы один тест видит данные другого — значит изоляция БД сломана.
 
-- Каждый тест вызывает `setupTestServer(t)` — изолированная среда
-- Используй `http.DefaultClient` для HTTP-запросов к тестовому серверу
-- Для `POST/PUT` устанавливай `Content-Type: application/json`
-- Проверяй и статус коды, и содержимое тела ответа
+## Зачем именно так, а не testcontainers
 
-## Пример структуры
-
-```go
-func TestCreateAndGetTask(t *testing.T) {
-    srv := setupTestServer(t)
-
-    // создаём задачу
-    resp, err := http.Post(srv.URL+"/tasks", "application/json",
-        strings.NewReader(`{"title":"Test","description":"Desc"}`))
-    // ...проверяем resp.StatusCode == 201
-
-    // получаем по ID
-    var created model.Task
-    json.NewDecoder(resp.Body).Decode(&created)
-    resp2, _ := http.Get(fmt.Sprintf("%s/tasks/%d", srv.URL, created.ID))
-    // ...проверяем resp2.StatusCode == 200
-}
-```
+В реальных проектах часто используют [testcontainers-go](https://golang.testcontainers.org/) — он поднимает PostgreSQL в Docker для каждого теста. Здесь sandbox запускает тесты без Docker-доступа, поэтому используется уже работающая БД с изоляцией через отдельные базы. Идея та же — реальная PostgreSQL, изолированное окружение для каждого теста.

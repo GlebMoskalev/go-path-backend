@@ -1,41 +1,48 @@
 package integration
 
-// Напишите интеграционные тесты для всего стека приложения.
+// Реализуйте SetupTestServer — helper для интеграционных тестов.
+//
+// PostgreSQL уже работает в sandbox-образе на localhost:5432 (postgres/postgres).
+// Твоя задача — создать изолированную БД для теста и собрать полный стек.
 //
 // Импорты:
 //   import (
-//       "context"
-//       "encoding/json"
+//       "database/sql"
 //       "fmt"
-//       "net/http"
+//       "math/rand"
 //       "net/http/httptest"
-//       "strings"
 //       "testing"
 //       "time"
 //
 //       "taskmanager/db"
 //       "taskmanager/handler"
 //       "taskmanager/middleware"
-//       "taskmanager/model"
 //       "taskmanager/repository"
 //       "taskmanager/server"
 //
-//       testcontainers "github.com/testcontainers/testcontainers-go"
-//       tcpostgres "github.com/testcontainers/testcontainers-go/modules/postgres"
-//       "github.com/testcontainers/testcontainers-go/wait"
+//       _ "github.com/jackc/pgx/v5/stdlib"
 //   )
 //
-// 1. func setupTestServer(t *testing.T) *httptest.Server
-//    - запускает PostgreSQL через testcontainers
-//    - создаёт db, запускает Migrate
-//    - собирает repository → handler → router → middleware.Chain
-//    - возвращает httptest.NewServer
-//    - регистрирует t.Cleanup для остановки контейнера и сервера
+// const baseDSN = "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable"
 //
-// 2. Реализуй 6 тестов:
-//    - TestHealthCheck         — GET /health → 200
-//    - TestCreateAndGetTask    — POST создаёт, GET/{id} возвращает
-//    - TestListTasks           — создать несколько, GET /tasks возвращает все
-//    - TestUpdateTask          — создать, PUT обновить, проверить
-//    - TestDeleteTask          — создать, DELETE, GET → 404
-//    - TestValidation          — POST с пустым title → 400
+// func SetupTestServer(t *testing.T) *httptest.Server
+//
+// Шаги:
+//   1. t.Helper()
+//   2. base, _ := sql.Open("pgx", baseDSN); defer base.Close()
+//   3. Создай уникальную БД:
+//      dbName := fmt.Sprintf("t_%d_%d", time.Now().UnixNano(), rand.Intn(1<<30))
+//      base.Exec("CREATE DATABASE " + dbName)
+//   4. testDSN := fmt.Sprintf("postgres://postgres:postgres@localhost:5432/%s?sslmode=disable", dbName)
+//      database, _ := db.New(testDSN)
+//      db.Migrate(database)
+//   5. Собери цепочку: repository → handler → router → middleware.Chain
+//   6. srv := httptest.NewServer(fullHandler)
+//   7. t.Cleanup:
+//      - srv.Close()
+//      - database.Close()
+//      - открой baseDSN и сделай pg_terminate_backend, потом DROP DATABASE
+//   8. return srv
+//
+// ВАЖНО: функция экспортируемая (SetupTestServer с большой буквы) —
+// её вызывают из scenarios_test.go в этом же пакете.

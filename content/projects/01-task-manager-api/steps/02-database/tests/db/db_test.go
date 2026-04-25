@@ -1,78 +1,88 @@
 package db
 
 import (
-	"context"
 	"database/sql"
+	"fmt"
+	"math/rand"
 	"testing"
 	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/modules/postgres"
-	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-func setupPostgres(t *testing.T) string {
+const baseDSN = "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable"
+
+// uniqueDB создаёт изолированную БД для теста.
+// PostgreSQL должен быть запущен на localhost:5432 (предустановлен в sandbox-образе).
+// Возвращает DSN новой БД и регистрирует cleanup для её удаления.
+func uniqueDB(t *testing.T) string {
 	t.Helper()
-	ctx := context.Background()
 
-	container, err := postgres.RunContainer(ctx,
-		testcontainers.WithImage("postgres:16-alpine"),
-		postgres.WithDatabase("testdb"),
-		postgres.WithUsername("postgres"),
-		postgres.WithPassword("postgres"),
-		testcontainers.WithWaitStrategy(
-			wait.ForLog("database system is ready to accept connections").
-				WithOccurrence(2).
-				WithStartupTimeout(30*time.Second),
-		),
-	)
+	base, err := sql.Open("pgx", baseDSN)
 	if err != nil {
-		t.Fatalf("start postgres container: %v", err)
+		t.Fatalf("open base db: %v", err)
 	}
-	t.Cleanup(func() { container.Terminate(ctx) })
+	if err := base.Ping(); err != nil {
+		base.Close()
+		t.Fatalf("PostgreSQL недоступен на localhost:5432: %v", err)
+	}
 
-	connStr, err := container.ConnectionString(ctx, "sslmode=disable")
-	if err != nil {
-		t.Fatalf("connection string: %v", err)
+	dbName := fmt.Sprintf("t_%d_%d", time.Now().UnixNano(), rand.Intn(1<<30))
+	if _, err := base.Exec("CREATE DATABASE " + dbName); err != nil {
+		base.Close()
+		t.Fatalf("create db %s: %v", dbName, err)
 	}
-	return connStr
+	base.Close()
+
+	t.Cleanup(func() {
+		cleanup, err := sql.Open("pgx", baseDSN)
+		if err != nil {
+			return
+		}
+		defer cleanup.Close()
+		cleanup.Exec(fmt.Sprintf(
+			"SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '%s'",
+			dbName))
+		cleanup.Exec("DROP DATABASE IF EXISTS " + dbName)
+	})
+
+	return fmt.Sprintf("postgres://postgres:postgres@localhost:5432/%s?sslmode=disable", dbName)
 }
 
 func TestNewConnects(t *testing.T) {
-	connStr := setupPostgres(t)
-	db, err := New(connStr)
+	dsn := uniqueDB(t)
+	database, err := New(dsn)
 	if err != nil {
-		t.Fatalf("New(%q) = %v, want nil error", connStr, err)
+		t.Fatalf("New: %v", err)
 	}
-	defer db.Close()
+	defer database.Close()
 
-	if err := db.Ping(); err != nil {
+	if err := database.Ping(); err != nil {
 		t.Errorf("Ping after New: %v", err)
 	}
 }
 
 func TestNewInvalidConnString(t *testing.T) {
-	_, err := New("postgres://invalid:invalid@localhost:9999/nodb?sslmode=disable&connect_timeout=1")
+	_, err := New("postgres://nouser:nopass@127.0.0.1:9/nodb?sslmode=disable&connect_timeout=1")
 	if err == nil {
 		t.Error("New(invalid) = nil, want error")
 	}
 }
 
 func TestMigrateCreatesTable(t *testing.T) {
-	connStr := setupPostgres(t)
-	db, err := New(connStr)
+	dsn := uniqueDB(t)
+	database, err := New(dsn)
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
-	defer db.Close()
+	defer database.Close()
 
-	if err := Migrate(db); err != nil {
+	if err := Migrate(database); err != nil {
 		t.Fatalf("Migrate: %v", err)
 	}
 
 	var exists bool
-	err = db.QueryRow(
+	err = database.QueryRow(
 		`SELECT EXISTS (
 			SELECT 1 FROM information_schema.tables
 			WHERE table_name = 'tasks'
@@ -87,24 +97,24 @@ func TestMigrateCreatesTable(t *testing.T) {
 }
 
 func TestMigrateIdempotent(t *testing.T) {
-	connStr := setupPostgres(t)
-	db, err := New(connStr)
+	dsn := uniqueDB(t)
+	database, err := New(dsn)
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
-	defer db.Close()
+	defer database.Close()
 
-	if err := Migrate(db); err != nil {
+	if err := Migrate(database); err != nil {
 		t.Fatalf("first Migrate: %v", err)
 	}
-	if err := Migrate(db); err != nil {
+	if err := Migrate(database); err != nil {
 		t.Errorf("second Migrate: %v, want nil (idempotent)", err)
 	}
 }
 
 func TestMigrateTableColumns(t *testing.T) {
-	connStr := setupPostgres(t)
-	database, err := New(connStr)
+	dsn := uniqueDB(t)
+	database, err := New(dsn)
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
@@ -140,8 +150,8 @@ func TestMigrateTableColumns(t *testing.T) {
 }
 
 func TestInsertAfterMigrate(t *testing.T) {
-	connStr := setupPostgres(t)
-	database, err := New(connStr)
+	dsn := uniqueDB(t)
+	database, err := New(dsn)
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
@@ -162,6 +172,3 @@ func TestInsertAfterMigrate(t *testing.T) {
 		t.Error("inserted id = 0, want non-zero SERIAL value")
 	}
 }
-
-// подавляем "imported and not used" для sql если не используется напрямую
-var _ = sql.ErrNoRows

@@ -6,10 +6,44 @@ import (
 	"time"
 )
 
+func TestNewTaskTitleAndDescription(t *testing.T) {
+	task := NewTask("Купить продукты", "Молоко и хлеб")
+	if task.Title != "Купить продукты" {
+		t.Errorf("Title = %q, want %q", task.Title, "Купить продукты")
+	}
+	if task.Description != "Молоко и хлеб" {
+		t.Errorf("Description = %q, want %q", task.Description, "Молоко и хлеб")
+	}
+}
+
+func TestNewTaskDistinctTitleAndDescription(t *testing.T) {
+	task := NewTask("title-value", "description-value")
+	if task.Title == task.Description {
+		t.Errorf("Title и Description оба = %q — поля перепутаны местами в конструкторе", task.Title)
+	}
+}
+
+func TestNewTaskEmptyDescription(t *testing.T) {
+	task := NewTask("only title", "")
+	if task.Title != "only title" {
+		t.Errorf("Title = %q, want %q", task.Title, "only title")
+	}
+	if task.Description != "" {
+		t.Errorf("Description = %q, want empty string", task.Description)
+	}
+}
+
 func TestNewTaskStatus(t *testing.T) {
 	task := NewTask("Купить продукты", "Молоко и хлеб")
 	if task.Status != StatusPending {
 		t.Errorf("Status = %q, want %q", task.Status, StatusPending)
+	}
+}
+
+func TestNewTaskZeroID(t *testing.T) {
+	task := NewTask("Test", "Desc")
+	if task.ID != 0 {
+		t.Errorf("ID = %d, want 0 (новая задача без ID — его проставит база)", task.ID)
 	}
 }
 
@@ -27,9 +61,30 @@ func TestNewTaskCreatedAt(t *testing.T) {
 }
 
 func TestNewTaskUpdatedAt(t *testing.T) {
+	before := time.Now()
 	task := NewTask("Test", "Desc")
+	after := time.Now()
+
 	if task.UpdatedAt.IsZero() {
 		t.Error("UpdatedAt is zero, want non-zero time")
+	}
+	if task.UpdatedAt.Before(before) || task.UpdatedAt.After(after) {
+		t.Errorf("UpdatedAt = %v, want between %v and %v", task.UpdatedAt, before, after)
+	}
+}
+
+func TestStatusConstants(t *testing.T) {
+	cases := []struct {
+		got, want Status
+	}{
+		{StatusPending, "pending"},
+		{StatusInProgress, "in_progress"},
+		{StatusDone, "done"},
+	}
+	for _, c := range cases {
+		if c.got != c.want {
+			t.Errorf("Status = %q, want %q", c.got, c.want)
+		}
 	}
 }
 
@@ -37,7 +92,10 @@ func TestValidateEmptyTitle(t *testing.T) {
 	task := Task{Title: ""}
 	err := task.Validate()
 	if err == nil {
-		t.Error("Validate() = nil, want error for empty title")
+		t.Fatal("Validate() = nil, want error for empty title")
+	}
+	if err.Error() != "title is required" {
+		t.Errorf("error message = %q, want %q", err.Error(), "title is required")
 	}
 }
 
@@ -101,6 +159,9 @@ func TestTaskJSONRoundTrip(t *testing.T) {
 	}
 	if decoded.Title != original.Title {
 		t.Errorf("Title = %q, want %q", decoded.Title, original.Title)
+	}
+	if decoded.Description != original.Description {
+		t.Errorf("Description = %q, want %q", decoded.Description, original.Description)
 	}
 	if decoded.Status != original.Status {
 		t.Errorf("Status = %q, want %q", decoded.Status, original.Status)

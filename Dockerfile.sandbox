@@ -1,5 +1,13 @@
 FROM golang:1.25-alpine
 
+# PostgreSQL для интеграционных тестов проектов
+RUN apk add --no-cache postgresql postgresql-contrib su-exec && \
+    mkdir -p /run/postgresql /var/lib/postgresql/data && \
+    chown -R postgres:postgres /run/postgresql /var/lib/postgresql/data && \
+    su-exec postgres initdb -D /var/lib/postgresql/data --auth=trust --no-locale --encoding=UTF8 && \
+    echo "listen_addresses = 'localhost'" >> /var/lib/postgresql/data/postgresql.conf && \
+    echo "unix_socket_directories = '/run/postgresql'" >> /var/lib/postgresql/data/postgresql.conf
+
 # Прогрев для одиночных задач (пакет solution)
 WORKDIR /warm-solution
 RUN printf 'module solution\n\ngo 1.25\n' > go.mod && \
@@ -8,18 +16,23 @@ RUN printf 'module solution\n\ngo 1.25\n' > go.mod && \
     go test -count=1 ./... && \
     rm -rf /warm-solution
 
-# Прогрев для многопакетных проектов (todoapi)
-WORKDIR /warm-project
-RUN mkdir -p model storage service handler && \
-    printf 'module todoapi\n\ngo 1.25\n' > go.mod && \
-    printf 'package model\nimport "time"\ntype Todo struct { ID int; Title string; Done bool; CreatedAt time.Time }\n' > model/warm.go && \
-    printf 'package storage\nimport ("errors";"sync";"todoapi/model")\nvar ErrNotFound = errors.New("not found")\ntype S struct { mu sync.RWMutex; m map[int]model.Todo }\n' > storage/warm.go && \
-    printf 'package storage\nimport "testing"\nfunc TestWarm(t *testing.T) {}\n' > storage/warm_test.go && \
-    printf 'package service\nimport ("todoapi/model";"todoapi/storage")\ntype Svc struct { s *storage.S }\nvar _ model.Todo\n' > service/warm.go && \
-    printf 'package service\nimport "testing"\nfunc TestWarm(t *testing.T) {}\n' > service/warm_test.go && \
-    printf 'package handler\nimport ("encoding/json";"errors";"net/http";"net/http/httptest";"strconv";"todoapi/storage")\nvar _ = errors.New; var _ = strconv.Atoi; var _ = json.Marshal; var _ = httptest.NewServer; var _ = http.StatusOK; var _ = storage.ErrNotFound\n' > handler/warm.go && \
-    printf 'package handler\nimport "testing"\nfunc TestWarm(t *testing.T) {}\n' > handler/warm_test.go && \
+# Отключаем sum DB на всё время — сборка и sandbox без сетевого доступа к sum.golang.org
+ENV GOSUMDB=off GOFLAGS="-mod=mod"
+
+# Прогрев для проекта taskmanager (pgx зависимость)
+WORKDIR /warm-taskmanager
+RUN mkdir -p model db && \
+    printf 'module taskmanager\n\ngo 1.25\n\nrequire github.com/jackc/pgx/v5 v5.5.5\n' > go.mod && \
+    printf 'package model\nimport "time"\ntype Status string\ntype Task struct { ID int64; Title string; Description string; Status Status; CreatedAt time.Time; UpdatedAt time.Time }\n' > model/warm.go && \
+    printf 'package db\nimport (\n\t"database/sql"\n\t_ "github.com/jackc/pgx/v5/stdlib"\n)\nvar _ *sql.DB\n' > db/warm.go && \
+    printf 'package db\nimport "testing"\nfunc TestWarm(t *testing.T) {}\n' > db/warm_test.go && \
+    go mod tidy && \
     go test -count=1 ./... && \
-    rm -rf /warm-project
+    rm -rf /warm-taskmanager
+
+# Entrypoint: запускаем PostgreSQL если есть pgx зависимость, затем тесты
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 WORKDIR /sandbox
+ENTRYPOINT ["/entrypoint.sh"]

@@ -8,6 +8,7 @@ hints:
   - "Connection string формат: postgres://user:password@host:port/dbname?sslmode=disable"
   - "Всегда вызывай db.Ping() после открытия — убедись что соединение живое"
   - "В Migrate используй SERIAL для автоинкремента, а не AUTOINCREMENT как в SQLite"
+  - "Тесты используют PostgreSQL на localhost:5432 (предустановлен в sandbox)"
 ---
 
 # Подключение к PostgreSQL
