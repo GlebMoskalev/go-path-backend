@@ -35,24 +35,42 @@ completions:
           - name: WriteHeader
             type: "func(statusCode int)"
             doc: "WriteHeader sends an HTTP response header with the provided status code"
+      - name: Request
+        kind: type
+        detail: "type Request struct"
+        doc: "A Request represents an HTTP request received by a server"
+        fields:
+          - name: Body
+            type: "io.ReadCloser"
+            doc: "Body is the request's body"
+          - name: Context
+            type: "func() context.Context"
+            doc: "Context returns the request's context"
+          - name: PathValue
+            type: "func(name string) string"
+            doc: "PathValue returns the value for the named path wildcard in the ServeMux pattern (Go 1.22+)"
+      - name: StatusOK
+        kind: constant
+        detail: "const StatusOK = 200"
+        doc: "HTTP 200 OK"
       - name: StatusCreated
-        kind: variable
+        kind: constant
         detail: "const StatusCreated = 201"
         doc: "HTTP 201 Created"
       - name: StatusNoContent
-        kind: variable
+        kind: constant
         detail: "const StatusNoContent = 204"
         doc: "HTTP 204 No Content"
       - name: StatusBadRequest
-        kind: variable
+        kind: constant
         detail: "const StatusBadRequest = 400"
         doc: "HTTP 400 Bad Request"
       - name: StatusNotFound
-        kind: variable
+        kind: constant
         detail: "const StatusNotFound = 404"
         doc: "HTTP 404 Not Found"
       - name: StatusInternalServerError
-        kind: variable
+        kind: constant
         detail: "const StatusInternalServerError = 500"
         doc: "HTTP 500 Internal Server Error"
   - name: strconv
@@ -61,4 +79,54 @@ completions:
       - name: ParseInt
         kind: function
         detail: "func ParseInt(s string, base int, bitSize int) (i int64, err error)"
-        doc: "ParseInt interprets a string s in the given base (0, 2 to 36) and bit size (0 to 64) and returns the corresponding value i"
+        doc: "ParseInt interprets a string s in the given base and bit size and returns the corresponding value i"
+  - name: context
+    doc: "Package context defines the Context type"
+    symbols:
+      - name: Context
+        kind: type
+        detail: "type Context interface"
+        doc: "Context carries deadlines, cancellation signals, and request-scoped values across API boundaries"
+  - name: taskmanager/model
+    doc: "Package model — модели данных проекта (из шага 01)"
+    symbols:
+      - name: Task
+        kind: type
+        detail: "type Task struct"
+        doc: "Task — основная сущность задачи"
+        fields:
+          - name: ID
+            type: "int64"
+            doc: "Уникальный идентификатор"
+          - name: Title
+            type: "string"
+            doc: "Название задачи"
+          - name: Description
+            type: "string"
+            doc: "Описание"
+          - name: Status
+            type: "Status"
+            doc: "Текущий статус задачи"
+          - name: Validate
+            type: "func() error"
+            doc: "Validate возвращает ошибку если Title пустой"
+      - name: Status
+        kind: type
+        detail: "type Status string"
+        doc: "Status — тип статуса задачи"
+      - name: StatusPending
+        kind: constant
+        detail: "const StatusPending Status = \"pending\""
+        doc: "Задача ожидает выполнения"
+      - name: StatusInProgress
+        kind: constant
+        detail: "const StatusInProgress Status = \"in_progress\""
+        doc: "Задача в работе"
+      - name: StatusDone
+        kind: constant
+        detail: "const StatusDone Status = \"done\""
+        doc: "Задача выполнена"
+      - name: NewTask
+        kind: function
+        detail: "func NewTask(title, description string) Task"
+        doc: "Создаёт новую задачу со статусом StatusPending"

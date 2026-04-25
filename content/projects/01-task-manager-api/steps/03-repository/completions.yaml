@@ -53,6 +53,13 @@ completions:
         kind: variable
         detail: "var ErrNoRows = errors.New(\"sql: no rows in result set\")"
         doc: "ErrNoRows is returned by Scan when QueryRow doesn't return a row"
+  - name: context
+    doc: "Package context defines the Context type, which carries deadlines, cancellation signals, and other request-scoped values"
+    symbols:
+      - name: Context
+        kind: type
+        detail: "type Context interface"
+        doc: "Context carries deadlines, cancellation signals, and request-scoped values across API boundaries"
   - name: fmt
     doc: "Package fmt implements formatted I/O"
     symbols:
@@ -60,3 +67,49 @@ completions:
         kind: function
         detail: "func Errorf(format string, a ...any) error"
         doc: "Errorf formats according to a format specifier and returns the string as a value that satisfies error"
+  - name: taskmanager/model
+    doc: "Package model — модели данных проекта (из шага 01)"
+    symbols:
+      - name: Task
+        kind: type
+        detail: "type Task struct"
+        doc: "Task — основная сущность задачи"
+        fields:
+          - name: ID
+            type: "int64"
+            doc: "Уникальный идентификатор, заполняется базой"
+          - name: Title
+            type: "string"
+            doc: "Название задачи"
+          - name: Description
+            type: "string"
+            doc: "Описание"
+          - name: Status
+            type: "Status"
+            doc: "Текущий статус задачи"
+          - name: CreatedAt
+            type: "time.Time"
+            doc: "Время создания"
+          - name: UpdatedAt
+            type: "time.Time"
+            doc: "Время последнего обновления"
+      - name: Status
+        kind: type
+        detail: "type Status string"
+        doc: "Status — тип статуса задачи"
+      - name: StatusPending
+        kind: constant
+        detail: "const StatusPending Status = \"pending\""
+        doc: "Задача ожидает выполнения"
+      - name: StatusInProgress
+        kind: constant
+        detail: "const StatusInProgress Status = \"in_progress\""
+        doc: "Задача в работе"
+      - name: StatusDone
+        kind: constant
+        detail: "const StatusDone Status = \"done\""
+        doc: "Задача выполнена"
+      - name: NewTask
+        kind: function
+        detail: "func NewTask(title, description string) Task"
+        doc: "NewTask создаёт новую задачу со статусом StatusPending и текущим временем"

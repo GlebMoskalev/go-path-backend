@@ -1,67 +1,198 @@
 completions:
+  - name: net/http
+    doc: "Package http provides HTTP client and server implementations"
+    symbols:
+      - name: Handler
+        kind: type
+        detail: "type Handler interface"
+        doc: "Handler — интерфейс для обработки HTTP-запросов"
   - name: net/http/httptest
     doc: "Package httptest provides utilities for HTTP testing"
     symbols:
       - name: NewServer
         kind: function
         detail: "func NewServer(handler http.Handler) *Server"
-        doc: "NewServer starts and returns a new Server"
+        doc: "NewServer запускает и возвращает HTTP-сервер на случайном порту"
+      - name: Server
+        kind: type
+        detail: "type Server struct"
+        doc: "Server — HTTP-сервер для тестов"
         fields:
           - name: URL
             type: "string"
-            doc: "URL is the base URL of the form http://ipaddr:port with no trailing slash"
+            doc: "URL базового адреса вида http://ipaddr:port (без trailing slash)"
           - name: Close
             type: "func()"
-            doc: "Close shuts down the server"
+            doc: "Close останавливает сервер и блокирует пока активные запросы не завершатся"
   - name: database/sql
     doc: "Package sql provides a generic interface around SQL databases"
     symbols:
       - name: Open
         kind: function
         detail: "func Open(driverName, dataSourceName string) (*DB, error)"
-        doc: "Open opens a database specified by its driver name and data source name"
+        doc: "Open открывает БД по имени драйвера и DSN. Не устанавливает соединение"
       - name: DB
         kind: type
         detail: "type DB struct"
-        doc: "DB is a database handle representing a pool of zero or more underlying connections"
+        doc: "Пул соединений с базой"
         fields:
           - name: Exec
             type: "func(query string, args ...any) (Result, error)"
-            doc: "Exec executes a query without returning any rows"
+            doc: "Exec выполняет запрос без возврата строк"
           - name: Ping
             type: "func() error"
-            doc: "Ping verifies a connection to the database is still alive"
+            doc: "Ping проверяет что соединение с БД активно"
           - name: Close
             type: "func() error"
-            doc: "Close closes the database"
+            doc: "Close закрывает соединение"
   - name: testing
     doc: "Package testing provides support for automated testing"
     symbols:
       - name: T
         kind: type
         detail: "type T struct"
-        doc: "T is a type passed to Test functions to manage test state"
+        doc: "T передаётся в Test-функции для управления состоянием теста"
         fields:
           - name: Helper
             type: "func()"
-            doc: "Helper marks the calling function as a test helper"
+            doc: "Helper помечает функцию как test helper для правильного stack trace"
           - name: Fatalf
             type: "func(format string, args ...any)"
-            doc: "Fatalf is equivalent to Logf followed by FailNow"
+            doc: "Fatalf — Logf + FailNow (прервать тест)"
+          - name: Errorf
+            type: "func(format string, args ...any)"
+            doc: "Errorf — Logf + Fail (продолжить тест)"
           - name: Cleanup
             type: "func(f func())"
-            doc: "Cleanup registers a function to be called when the test completes"
+            doc: "Cleanup регистрирует функцию которая выполнится по завершении теста"
   - name: math/rand
     doc: "Package rand implements pseudo-random number generators"
     symbols:
       - name: Intn
         kind: function
         detail: "func Intn(n int) int"
-        doc: "Intn returns, as an int, a non-negative pseudo-random number in [0,n)"
+        doc: "Intn возвращает неотрицательное случайное число в [0, n)"
   - name: time
     doc: "Package time provides functionality for measuring and displaying time"
     symbols:
       - name: Now
         kind: function
         detail: "func Now() Time"
-        doc: "Now returns the current local time"
+        doc: "Now возвращает текущее локальное время"
+      - name: Time
+        kind: type
+        detail: "type Time struct"
+        doc: "Time представляет момент времени"
+        fields:
+          - name: UnixNano
+            type: "func() int64"
+            doc: "UnixNano возвращает t как Unix timestamp в наносекундах"
+  - name: fmt
+    doc: "Package fmt implements formatted I/O"
+    symbols:
+      - name: Sprintf
+        kind: function
+        detail: "func Sprintf(format string, a ...any) string"
+        doc: "Sprintf форматирует строку и возвращает её"
+  - name: taskmanager/db
+    doc: "Package db — подключение к PostgreSQL (из шага 02)"
+    symbols:
+      - name: New
+        kind: function
+        detail: "func New(connString string) (*sql.DB, error)"
+        doc: "New открывает соединение с PostgreSQL и проверяет его через Ping"
+      - name: Migrate
+        kind: function
+        detail: "func Migrate(db *sql.DB) error"
+        doc: "Migrate создаёт таблицу tasks (CREATE TABLE IF NOT EXISTS)"
+  - name: taskmanager/repository
+    doc: "Package repository — слой работы с данными (из шага 03)"
+    symbols:
+      - name: TaskRepository
+        kind: type
+        detail: "type TaskRepository struct"
+        doc: "Репозиторий задач"
+      - name: New
+        kind: function
+        detail: "func New(db *sql.DB) *TaskRepository"
+        doc: "New создаёт TaskRepository с указанной БД"
+  - name: taskmanager/handler
+    doc: "Package handler — HTTP handlers (из шага 04)"
+    symbols:
+      - name: TaskHandler
+        kind: type
+        detail: "type TaskHandler struct"
+        doc: "TaskHandler — HTTP handlers для задач"
+      - name: New
+        kind: function
+        detail: "func New(repo TaskRepository) *TaskHandler"
+        doc: "New создаёт TaskHandler с указанным репозиторием"
+  - name: taskmanager/server
+    doc: "Package server — роутер (из шага 05)"
+    symbols:
+      - name: NewRouter
+        kind: function
+        detail: "func NewRouter(h *handler.TaskHandler) http.Handler"
+        doc: "NewRouter регистрирует все REST-маршруты и возвращает http.Handler"
+  - name: taskmanager/middleware
+    doc: "Package middleware — middleware (из шага 06)"
+    symbols:
+      - name: Logger
+        kind: function
+        detail: "func Logger(next http.Handler) http.Handler"
+        doc: "Logger логирует каждый запрос"
+      - name: Recovery
+        kind: function
+        detail: "func Recovery(next http.Handler) http.Handler"
+        doc: "Recovery ловит panic и возвращает 500"
+      - name: Chain
+        kind: function
+        detail: "func Chain(h http.Handler, middlewares ...func(http.Handler) http.Handler) http.Handler"
+        doc: "Chain применяет цепочку middleware"
+  - name: taskmanager/model
+    doc: "Package model — модели данных (из шага 01)"
+    symbols:
+      - name: Task
+        kind: type
+        detail: "type Task struct"
+        doc: "Task — основная сущность задачи"
+        fields:
+          - name: ID
+            type: "int64"
+            doc: "Идентификатор"
+          - name: Title
+            type: "string"
+            doc: "Название"
+          - name: Description
+            type: "string"
+            doc: "Описание"
+          - name: Status
+            type: "Status"
+            doc: "Статус"
+      - name: Status
+        kind: type
+        detail: "type Status string"
+        doc: "Тип статуса задачи"
+      - name: StatusPending
+        kind: constant
+        detail: "const StatusPending Status = \"pending\""
+        doc: "Ожидает выполнения"
+      - name: StatusInProgress
+        kind: constant
+        detail: "const StatusInProgress Status = \"in_progress\""
+        doc: "В работе"
+      - name: StatusDone
+        kind: constant
+        detail: "const StatusDone Status = \"done\""
+        doc: "Выполнена"
+      - name: NewTask
+        kind: function
+        detail: "func NewTask(title, description string) Task"
+        doc: "Создаёт задачу со StatusPending"
+  - name: github.com/jackc/pgx/v5/stdlib
+    doc: "Package stdlib provides a database/sql compatible driver for pgx"
+    symbols:
+      - name: OpenDB
+        kind: function
+        detail: "func OpenDB(config pgx.ConnConfig) *sql.DB"
+        doc: "Импортируется через side-effect: _ \"github.com/jackc/pgx/v5/stdlib\""

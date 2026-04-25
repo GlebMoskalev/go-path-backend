@@ -6,19 +6,75 @@ completions:
         kind: function
         detail: "func NewServeMux() *ServeMux"
         doc: "NewServeMux allocates and returns a new ServeMux"
+      - name: ServeMux
+        kind: type
+        detail: "type ServeMux struct"
+        doc: "ServeMux — HTTP request multiplexer (роутер). В Go 1.22+ поддерживает методы и параметры пути"
         fields:
           - name: HandleFunc
             type: "func(pattern string, handler func(ResponseWriter, *Request))"
-            doc: "HandleFunc registers the handler function for the given pattern. In Go 1.22+, pattern can include method: \"GET /path\""
+            doc: "Регистрирует handler для шаблона. В Go 1.22+ паттерн может включать метод: \"GET /tasks/{id}\""
+          - name: Handle
+            type: "func(pattern string, handler Handler)"
+            doc: "Handle registers the handler for the given pattern"
+          - name: ServeHTTP
+            type: "func(ResponseWriter, *Request)"
+            doc: "ServeHTTP dispatches the request to the handler whose pattern matches"
       - name: ListenAndServe
         kind: function
         detail: "func ListenAndServe(addr string, handler Handler) error"
-        doc: "ListenAndServe listens on the TCP network address addr and then calls Serve with handler to handle requests on incoming connections"
+        doc: "ListenAndServe слушает TCP-адрес и обрабатывает запросы через handler"
       - name: Handler
         kind: type
         detail: "type Handler interface { ServeHTTP(ResponseWriter, *Request) }"
-        doc: "A Handler responds to an HTTP request"
+        doc: "Handler — интерфейс для обработки HTTP-запросов"
       - name: HandlerFunc
         kind: type
         detail: "type HandlerFunc func(ResponseWriter, *Request)"
-        doc: "The HandlerFunc type is an adapter to allow the use of ordinary functions as HTTP handlers"
+        doc: "HandlerFunc — адаптер обычной функции к интерфейсу Handler"
+      - name: ResponseWriter
+        kind: type
+        detail: "type ResponseWriter interface"
+        doc: "Используется handler-ом для записи HTTP-ответа"
+      - name: Request
+        kind: type
+        detail: "type Request struct"
+        doc: "Представляет HTTP-запрос на сервере"
+  - name: encoding/json
+    doc: "Package json implements encoding and decoding of JSON"
+    symbols:
+      - name: NewEncoder
+        kind: function
+        detail: "func NewEncoder(w io.Writer) *Encoder"
+        doc: "NewEncoder возвращает новый JSON-энкодер"
+        fields:
+          - name: Encode
+            type: "func(v any) error"
+            doc: "Encode пишет JSON-кодирование v в поток"
+  - name: taskmanager/handler
+    doc: "Package handler — HTTP handlers (из шага 04)"
+    symbols:
+      - name: TaskHandler
+        kind: type
+        detail: "type TaskHandler struct"
+        doc: "TaskHandler — HTTP handlers для задач"
+        fields:
+          - name: Create
+            type: "func(w http.ResponseWriter, r *http.Request)"
+            doc: "POST /tasks — создаёт задачу"
+          - name: GetByID
+            type: "func(w http.ResponseWriter, r *http.Request)"
+            doc: "GET /tasks/{id} — возвращает задачу по ID"
+          - name: List
+            type: "func(w http.ResponseWriter, r *http.Request)"
+            doc: "GET /tasks — возвращает все задачи"
+          - name: Update
+            type: "func(w http.ResponseWriter, r *http.Request)"
+            doc: "PUT /tasks/{id} — обновляет задачу"
+          - name: Delete
+            type: "func(w http.ResponseWriter, r *http.Request)"
+            doc: "DELETE /tasks/{id} — удаляет задачу"
+      - name: New
+        kind: function
+        detail: "func New(repo TaskRepository) *TaskHandler"
+        doc: "New создаёт HTTP-handler для задач"
