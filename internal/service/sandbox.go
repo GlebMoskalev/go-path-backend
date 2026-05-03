@@ -18,12 +18,13 @@ import (
 )
 
 type SandboxService struct {
-	log      *zap.Logger
-	docker   *client.Client
-	image    string
-	timeOut  time.Duration
-	memory   int64
-	nanoCPUs int64
+	log         *zap.Logger
+	docker      *client.Client
+	image       string
+	timeOut     time.Duration
+	memory      int64
+	nanoCPUs    int64
+	cacheVolume string
 }
 
 func NewSandboxService(log *zap.Logger, sandboxCfg config.SandboxConfig) (*SandboxService, error) {
@@ -38,12 +39,13 @@ func NewSandboxService(log *zap.Logger, sandboxCfg config.SandboxConfig) (*Sandb
 	}
 
 	return &SandboxService{
-		log:      log,
-		docker:   docker,
-		image:    sandboxCfg.Image,
-		timeOut:  sandboxCfg.Timeout,
-		memory:   sandboxCfg.Memory,
-		nanoCPUs: sandboxCfg.NanoCPUs,
+		log:         log,
+		docker:      docker,
+		image:       sandboxCfg.Image,
+		timeOut:     sandboxCfg.Timeout,
+		memory:      sandboxCfg.Memory,
+		nanoCPUs:    sandboxCfg.NanoCPUs,
+		cacheVolume: sandboxCfg.CacheVolume,
 	}, nil
 }
 
@@ -70,17 +72,23 @@ func (s *SandboxService) run(ctx context.Context, files map[string]string) model
 	ctx, cancel := context.WithTimeout(ctx, s.timeOut)
 	defer cancel()
 
-	resp, err := s.docker.ContainerCreate(ctx, &container.Config{
-		Image:      s.image,
-		Cmd:        []string{"go", "test", "-v", "-json", "-count=1", "./..."},
-		WorkingDir: "/sandbox",
-	}, &container.HostConfig{
+	hostCfg := &container.HostConfig{
 		NetworkMode: "none",
 		Resources: container.Resources{
 			Memory:   s.memory,
 			NanoCPUs: s.nanoCPUs,
 		},
-	}, nil, nil, "")
+	}
+	if s.cacheVolume != "" {
+		hostCfg.Binds = []string{s.cacheVolume + ":/root/.cache/go/build"}
+	}
+
+	resp, err := s.docker.ContainerCreate(ctx, &container.Config{
+		Image:      s.image,
+		Cmd:        []string{"go", "test", "-v", "-json", "-count=1", "./..."},
+		WorkingDir: "/sandbox",
+		Env:        []string{"GOCACHE=/root/.cache/go/build"},
+	}, hostCfg, nil, nil, "")
 	if err != nil {
 		s.log.Error("container create failed", zap.Error(err))
 		return model.SubmitResult{Error: "internal error"}

@@ -57,11 +57,12 @@ type RedisConfig struct {
 }
 
 type SandboxConfig struct {
-	Image      string        `mapstructure:"SANDBOX_IMAGE"`
-	Timeout    time.Duration `mapstructure:"-"`
-	TimeoutStr string        `mapstructure:"SANDBOX_TIMEOUT"`
-	Memory     int64         `mapstructure:"SANDBOX_MEMORY"`
-	NanoCPUs   int64         `mapstructure:"SANDBOX_NANO_CPUS"`
+	Image       string        `mapstructure:"SANDBOX_IMAGE"`
+	Timeout     time.Duration `mapstructure:"-"`
+	TimeoutStr  string        `mapstructure:"SANDBOX_TIMEOUT"`
+	Memory      int64         `mapstructure:"SANDBOX_MEMORY"`
+	NanoCPUs    int64         `mapstructure:"SANDBOX_NANO_CPUS"`
+	CacheVolume string        `mapstructure:"SANDBOX_CACHE_VOLUME"`
 }
 
 type AIConfig struct {
