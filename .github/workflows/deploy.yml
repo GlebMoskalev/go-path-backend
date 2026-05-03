@@ -38,14 +38,13 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd /opt/go-path
-            
-            # Распаковываем архив. К этому моменту файл .env уже будет внутри!
+
+            find /opt/go-path -mindepth 1 -maxdepth 1 ! -name 'app.tar.gz' -exec rm -rf {} +
+
             tar -xzf app.tar.gz
             rm app.tar.gz
             
-            # Останавливаем старые контейнеры и поднимаем новые
             docker compose down
             docker compose up -d --build
             
-            # Очищаем старые неиспользуемые образы
             docker image prune -a -f
