@@ -31,11 +31,17 @@ get_user_by_id(id int)
 Аббревиатуры пишутся заглавными буквами целиком:
 
 ```go
-// Правильно:
-userID   // не UserId
-parseURL // не ParseUrl
-htmlBody // не htmlBody — тут уже ладно, но...
+// Правильно (неэкспортированные):
+userID   // не userId
+parseURL // не parseUrl
+htmlBody // не htmlBody — аббревиатура целиком строчная, т.к. идентификатор неэкспортированный
 dbURL    // не dbUrl
+
+// Правильно (экспортированные):
+UserID
+ParseURL
+HTMLBody // не HtmlBody
+DBURL    // не DbUrl
 
 // В экспортированных именах — особенно важно:
 type UserID int     // не UserId
