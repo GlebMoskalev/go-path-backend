@@ -177,10 +177,11 @@ adjacency["D"]["E"] = 5
 
 ## Map как множество (set)
 
-В Go нет встроенного типа Set. Эмулируется через `map[T]struct{}`:
+В Go нет встроенного типа Set. Эмулируется через `map[T]struct{}`.
+
+`struct{}` — пустая структура, которая занимает **ноль байт** памяти. Нас интересует только факт наличия ключа в map, значение само по себе не нужно — поэтому вместо `bool` или `int` используют `struct{}`, чтобы не тратить память на бесполезные значения.
 
 ```go
-// struct{} — нулевой размер, не занимает память
 seen := map[string]struct{}{}
 
 words := []string{"apple", "banana", "apple", "cherry", "banana"}
@@ -209,73 +210,7 @@ if seen["apple"] {
 
 ---
 
-## sync.Map для конкурентного доступа
-
-Обычная `map` **не безопасна для конкурентного чтения/записи**:
-
-```go
-// ОПАСНО: race condition!
-var m = map[string]int{}
-go func() { m["key"] = 1 }()
-go func() { fmt.Println(m["key"]) }()
-```
-
-Для конкурентного доступа есть два варианта:
-
-### Вариант 1: обычная map + sync.RWMutex
-
-```go
-import "sync"
-
-type SafeMap struct {
-    mu sync.RWMutex
-    m  map[string]int
-}
-
-func (sm *SafeMap) Set(key string, val int) {
-    sm.mu.Lock()
-    defer sm.mu.Unlock()
-    sm.m[key] = val
-}
-
-func (sm *SafeMap) Get(key string) (int, bool) {
-    sm.mu.RLock()
-    defer sm.mu.RUnlock()
-    v, ok := sm.m[key]
-    return v, ok
-}
-```
-
-### Вариант 2: sync.Map
-
-Оптимизирована для конкретных сценариев: много чтений и редкие записи, или разные ключи пишут разные горутины:
-
-```go
-import "sync"
-
-var sm sync.Map
-
-sm.Store("key", 42)
-
-val, ok := sm.Load("key")
-if ok {
-    fmt.Println(val.(int))  // 42
-}
-
-// Атомарная операция "загрузи или сохрани":
-actual, loaded := sm.LoadOrStore("key", 99)
-fmt.Println(actual, loaded)  // 42 true — ключ уже был
-
-sm.Delete("key")
-
-// Итерация:
-sm.Range(func(key, value any) bool {
-    fmt.Println(key, value)
-    return true  // вернуть false — остановить итерацию
-})
-```
-
-> 💡 Конкурентность и sync-пакет подробно разберём в главе 10.
+> Обычная `map` не безопасна при одновременном доступе из нескольких горутин. Как с этим работать — разберём в главе 10 «Конкурентность», в теме про пакет `sync`.
 
 ---
 
