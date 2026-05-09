@@ -21,7 +21,6 @@ type Animal struct {
 }
 
 // Describe возвращает строку вида "<Name>: <Summary()>".
-// Подсказка: вызовите a.Summary() — он доступен благодаря встраиванию.
 func (a Animal) Describe() string {
 	// Напишите ваш код здесь
 	return ""

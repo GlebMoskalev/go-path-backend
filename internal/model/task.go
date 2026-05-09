@@ -13,10 +13,11 @@ type TaskMeta struct {
 }
 
 type TaskFrontmatter struct {
-	Title       string `yaml:"title"`
-	Description string `yaml:"description"`
-	Order       int    `yaml:"order"`
-	Difficulty  string `yaml:"difficulty"`
+	Title       string   `yaml:"title"`
+	Description string   `yaml:"description"`
+	Order       int      `yaml:"order"`
+	Difficulty  string   `yaml:"difficulty"`
+	Hints       []string `yaml:"hints"`
 }
 
 type TaskChapter struct {
@@ -29,14 +30,15 @@ type TaskChapter struct {
 }
 
 type Task struct {
-	Slug         string `json:"slug"`
-	Title        string `json:"title"`
-	Description  string `json:"description"`
-	Template     string `json:"template,omitempty"`
-	Difficulty   string `json:"difficulty"`
-	Order        int    `json:"order"`
-	ChapterSlug  string `json:"chapter_slug,omitempty"`
-	ChapterTitle string `json:"chapter_title,omitempty"`
+	Slug         string   `json:"slug"`
+	Title        string   `json:"title"`
+	Description  string   `json:"description"`
+	Template     string   `json:"template,omitempty"`
+	Difficulty   string   `json:"difficulty"`
+	Hints        []string `json:"hints,omitempty"`
+	Order        int      `json:"order"`
+	ChapterSlug  string   `json:"chapter_slug,omitempty"`
+	ChapterTitle string   `json:"chapter_title,omitempty"`
 	// Solved: nil = не авторизован, true/false = авторизован
 	Solved *bool `json:"solved,omitempty"`
 	// Submissions: nil = не авторизован, []Submission = авторизован

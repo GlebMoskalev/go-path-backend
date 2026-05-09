@@ -298,6 +298,7 @@ func (s *TaskService) loadTask(fsys fs.FS, chapterPath, dirName, chapterSlug str
 		Description: description,
 		Template:    string(templateData),
 		Difficulty:  fm.Difficulty,
+		Hints:       fm.Hints,
 		Order:       fm.Order,
 		ChapterSlug: chapterSlug,
 		Completions: completions,
