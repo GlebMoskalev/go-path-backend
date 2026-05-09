@@ -1,6 +1,6 @@
 ---
 title: "Структуры как коллекции"
-description: "Slice of structs vs struct of slices, сортировка, encoding/json"
+description: "Slice of structs vs struct of slices, сортировка"
 order: 5
 ---
 
@@ -115,97 +115,7 @@ sort.Sort(ByAge(users))
 
 ---
 
-## encoding/json — сериализация
-
-Пакет `encoding/json` знает как превратить структуры в JSON и обратно.
-
-### Маршаллинг (struct → JSON)
-
-```go
-import "encoding/json"
-
-type Product struct {
-    ID       int     `json:"id"`
-    Name     string  `json:"name"`
-    Price    float64 `json:"price"`
-    InStock  bool    `json:"in_stock"`
-}
-
-p := Product{ID: 1, Name: "Ноутбук", Price: 79999.99, InStock: true}
-
-data, err := json.Marshal(p)
-if err != nil {
-    log.Fatal(err)
-}
-fmt.Println(string(data))
-// {"id":1,"name":"Ноутбук","price":79999.99,"in_stock":true}
-```
-
-Теги `json:"..."` управляют именами ключей в JSON.
-
-### Отступы для читаемости
-
-```go
-data, _ := json.MarshalIndent(p, "", "  ")
-fmt.Println(string(data))
-// {
-//   "id": 1,
-//   "name": "Ноутбук",
-//   "price": 79999.99,
-//   "in_stock": true
-// }
-```
-
-### Анмаршаллинг (JSON → struct)
-
-```go
-jsonStr := `{"id":2,"name":"Мышь","price":1299.50,"in_stock":false}`
-
-var product Product
-err := json.Unmarshal([]byte(jsonStr), &product)
-if err != nil {
-    log.Fatal(err)
-}
-fmt.Printf("%+v\n", product)
-// {ID:2 Name:Мышь Price:1299.5 InStock:false}
-```
-
-### Опции тегов
-
-```go
-type User struct {
-    ID       int    `json:"id"`
-    Name     string `json:"name"`
-    Password string `json:"-"`             // всегда пропускать в JSON
-    Age      int    `json:"age,omitempty"` // пропустить если == 0
-    Email    string `json:"email,omitempty"`
-}
-
-u := User{ID: 1, Name: "Алиса", Password: "secret", Age: 0}
-data, _ := json.Marshal(u)
-fmt.Println(string(data))
-// {"id":1,"name":"Алиса"}  — Password и Age(omitempty) пропущены
-```
-
-### Маршаллинг слайса структур
-
-```go
-products := []Product{
-    {ID: 1, Name: "Ноутбук", Price: 79999.99, InStock: true},
-    {ID: 2, Name: "Мышь", Price: 1299.50, InStock: false},
-}
-
-data, _ := json.MarshalIndent(products, "", "  ")
-fmt.Println(string(data))
-// [
-//   {
-//     "id": 1,
-//     "name": "Ноутбук",
-//     ...
-//   },
-//   ...
-// ]
-```
+> Сериализация структур в JSON и struct tags подробно разбираются в главе 6 «Указатели и структуры».
 
 ---
 
@@ -247,27 +157,21 @@ type PointCloud struct {
 
 ---
 
-## Практический пример: API-ответ
+## Практический пример: фильтрация и сортировка
 
 ```go
 package main
 
 import (
-    "encoding/json"
     "fmt"
     "sort"
 )
 
 type Product struct {
-    ID       int     `json:"id"`
-    Name     string  `json:"name"`
-    Price    float64 `json:"price"`
-    Category string  `json:"category"`
-}
-
-type APIResponse struct {
-    Total    int       `json:"total"`
-    Products []Product `json:"products"`
+    ID       int
+    Name     string
+    Price    float64
+    Category string
 }
 
 func main() {
@@ -278,18 +182,24 @@ func main() {
         {4, "Роман", 399, "books"},
     }
 
-    // Сортируем по цене:
-    sort.Slice(products, func(i, j int) bool {
-        return products[i].Price < products[j].Price
-    })
-
-    response := APIResponse{
-        Total:    len(products),
-        Products: products,
+    // Оставляем только электронику:
+    var electronics []Product
+    for _, p := range products {
+        if p.Category == "electronics" {
+            electronics = append(electronics, p)
+        }
     }
 
-    data, _ := json.MarshalIndent(response, "", "  ")
-    fmt.Println(string(data))
+    // Сортируем по цене:
+    sort.Slice(electronics, func(i, j int) bool {
+        return electronics[i].Price < electronics[j].Price
+    })
+
+    for _, p := range electronics {
+        fmt.Printf("%s — %.0f₽\n", p.Name, p.Price)
+    }
+    // Мышь — 1299₽
+    // Ноутбук — 79999₽
 }
 ```
 
@@ -300,6 +210,5 @@ func main() {
 - Слайс структур — основной паттерн для коллекций объектов
 - Изменяй элементы через `s[i]`, а не через range-переменную (которая копия)
 - `sort.Slice` — гибкая сортировка по любому критерию
-- `json.Marshal` / `json.Unmarshal` — стандартная сериализация
-- Теги `json:"name,omitempty"` и `json:"-"` управляют маршаллингом
-- nil slice маршаллируется в `null`, empty slice — в `[]`
+- `sort.SliceStable` — когда важно не сломать существующий порядок среди равных элементов
+- AoS (slice of structs) подходит для большинства задач, SoA (struct of slices) — для высоконагруженных векторных операций
