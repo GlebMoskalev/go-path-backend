@@ -109,12 +109,16 @@ func (p Point) String() string    { return fmt.Sprintf("(%.2f, %.2f)", p.X, p.Y)
 
 ## Method Set
 
-Method set типа определяет, какие интерфейсы он реализует.
+У каждого типа есть набор методов — method set. Именно он определяет, реализует ли тип тот или иной интерфейс.
 
-| Тип | Доступные методы |
+Ключевое правило: `*T` включает все методы `T`, но не наоборот.
+
+| Тип | Какие методы входят |
 |-----|-----------------|
-| `T` | методы с value receiver |
-| `*T` | методы с value receiver + pointer receiver |
+| `T` | только методы с value receiver (`func (t T) ...`) |
+| `*T` | методы с value receiver + методы с pointer receiver (`func (t *T) ...`) |
+
+Это важно, потому что интерфейс можно передать только если method set типа покрывает все методы интерфейса.
 
 ```go
 type Greeter interface {
@@ -128,13 +132,16 @@ type Person struct {
 func (p Person) Greet() string {
     return "Привет, я " + p.Name
 }
-
-// Person реализует Greeter через value receiver:
-var g Greeter = Person{Name: "Алиса"}  // OK
-var g2 Greeter = &Person{Name: "Боб"}  // тоже OK — *Person включает value методы
 ```
 
-Но если метод с pointer receiver:
+`Greet` определён с value receiver — значит он входит в method set и `Person`, и `*Person`:
+
+```go
+var g Greeter = Person{Name: "Алиса"}   // OK — Person реализует Greeter
+var g2 Greeter = &Person{Name: "Боб"}   // OK — *Person тоже реализует Greeter
+```
+
+Теперь добавим метод с pointer receiver:
 
 ```go
 type Writer interface {
@@ -145,10 +152,13 @@ func (p *Person) Write(data string) {
     fmt.Println(p.Name, "пишет:", data)
 }
 
-var w Writer = &Person{Name: "Алиса"}  // OK
-// var w2 Writer = Person{Name: "Боб"}  // ОШИБКА: Person не реализует Writer
-// (метод Write есть только у *Person)
+var w Writer = &Person{Name: "Алиса"}  // OK — *Person реализует Writer
+var w2 Writer = Person{Name: "Боб"}    // ОШИБКА: Person не реализует Writer
 ```
+
+Почему ошибка? Метод `Write` определён с pointer receiver — он входит только в method set `*Person`, но не `Person`. Go не может автоматически взять адрес переменной при проверке интерфейса, поэтому значение типа `Person` не подходит.
+
+Практическое правило: если хоть один метод структуры использует pointer receiver — передавай указатель (`&Person{...}`), иначе интерфейс не будет реализован.
 
 ---
 

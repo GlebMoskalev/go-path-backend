@@ -17,6 +17,6 @@ type QuizChapterInfo struct {
 
 type QuizAnswerResponse struct {
 	Correct       bool   `json:"correct"`
-	CorrectAnswer int    `json:"correct_answer"`
+	CorrectAnswer string `json:"correct_answer"`
 	Explanation   string `json:"explanation"`
 }

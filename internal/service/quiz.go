@@ -63,18 +63,29 @@ func (s *QuizService) GetQuestions(chapterSlugs []string, limit int) []model.Qui
 		pool = pool[:limit]
 	}
 
+	for i := range pool {
+		opts := make([]string, len(pool[i].Options))
+		copy(opts, pool[i].Options)
+		rand.Shuffle(len(opts), func(a, b int) {
+			opts[a], opts[b] = opts[b], opts[a]
+		})
+		pool[i].Options = opts
+	}
+
 	return pool
 }
 
-func (s *QuizService) CheckAnswer(questionID string, answer int) (model.QuizAnswerResponse, error) {
+func (s *QuizService) CheckAnswer(questionID string, answerText string) (model.QuizAnswerResponse, error) {
 	q, ok := s.allByID[questionID]
 	if !ok {
 		return model.QuizAnswerResponse{}, ErrQuestionNotFound
 	}
 
+	correctText := q.Options[q.Answer]
+
 	return model.QuizAnswerResponse{
-		Correct:       answer == q.Answer,
-		CorrectAnswer: q.Answer,
+		Correct:       answerText == correctText,
+		CorrectAnswer: correctText,
 		Explanation:   q.Explanation,
 	}, nil
 }

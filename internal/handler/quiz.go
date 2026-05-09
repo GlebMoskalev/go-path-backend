@@ -50,7 +50,7 @@ func (h *QuizHandler) GetQuestions(w http.ResponseWriter, r *http.Request) {
 func (h *QuizHandler) CheckAnswer(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		QuestionID string `json:"question_id"`
-		Answer     int    `json:"answer"`
+		Answer     string `json:"answer"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -60,6 +60,10 @@ func (h *QuizHandler) CheckAnswer(w http.ResponseWriter, r *http.Request) {
 
 	if req.QuestionID == "" {
 		utils.ResponseWithError(w, http.StatusBadRequest, "question_id is required")
+		return
+	}
+	if req.Answer == "" {
+		utils.ResponseWithError(w, http.StatusBadRequest, "answer is required")
 		return
 	}
 
