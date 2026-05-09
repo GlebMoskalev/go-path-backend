@@ -28,7 +28,7 @@ func TestRuneCountEmpty(t *testing.T) {
 
 func TestRuneCountEmoji(t *testing.T) {
 	got := RuneCount("Go 🚀")
-	want := 5
+	want := 4
 	if got != want {
 		t.Errorf("RuneCount(%q) = %v, want %v", "Go 🚀", got, want)
 	}
