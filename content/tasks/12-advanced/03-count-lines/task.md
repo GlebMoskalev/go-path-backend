@@ -3,13 +3,14 @@ title: "Подсчёт строк в Reader"
 description: "Считает количество строк из io.Reader, используя bufio.Scanner"
 order: 3
 difficulty: medium
+hints:
+  - "Используй `bufio.NewScanner` для построчного чтения"
 ---
 
 # Подсчёт строк в Reader
 
 Напишите функцию `CountLines`, которая принимает `io.Reader` и возвращает количество строк и ошибку.
 
-- Используйте `bufio.NewScanner` для построчного чтения
 - Пустая строка (нулевой Reader) → `(0, nil)`
 - Ошибка чтения → `(0, err)`
 

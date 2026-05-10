@@ -102,28 +102,45 @@ func TestDivide(t *testing.T) {
 
 ## t.Helper — правильные стек-трейсы
 
-Вспомогательная функция должна вызывать `t.Helper()`, чтобы строка ошибки указывала на вызывающий код, а не внутрь helper:
+Когда тест падает, Go выводит имя файла и номер строки где произошла ошибка. Без `t.Helper()` это будет строка внутри helper-функции — бесполезная информация. С `t.Helper()` — строка в самом тесте, где был вызов.
 
 ```go
-// БЕЗ t.Helper: строка ошибки указывает на строку внутри assertEqual
 func assertEqual(t *testing.T, got, want int) {
     if got != want {
-        t.Errorf("got %d, want %d", got, want)  // указывает сюда
-    }
-}
-
-// С t.Helper: строка ошибки указывает на вызывающий тест
-func assertEqual(t *testing.T, got, want int) {
-    t.Helper()  // добавляем в начало helper-функции
-    if got != want {
-        t.Errorf("got %d, want %d", got, want)  // теперь строка в тесте
+        t.Errorf("got %d, want %d", got, want)
     }
 }
 
 func TestAdd(t *testing.T) {
-    assertEqual(t, Add(2, 3), 5)   // ← ошибка укажет на эту строку
-    assertEqual(t, Add(-1, 1), 0)
+    assertEqual(t, Add(2, 3), 6)  // ошибка: 5 != 6
 }
+```
+
+Вывод без `t.Helper()` — указывает внутрь helper, непонятно какой вызов упал:
+```
+--- FAIL: TestAdd
+    math_test.go:4: got 5, want 6   ← строка внутри assertEqual, бесполезно
+```
+
+Добавляем `t.Helper()`:
+
+```go
+func assertEqual(t *testing.T, got, want int) {
+    t.Helper()  // говорит Go: эта функция — helper, не показывай её в трейсе
+    if got != want {
+        t.Errorf("got %d, want %d", got, want)
+    }
+}
+
+func TestAdd(t *testing.T) {
+    assertEqual(t, Add(2, 3), 6)  // ← теперь ошибка укажет именно сюда
+}
+```
+
+Вывод с `t.Helper()` — сразу видно где в тесте проблема:
+```
+--- FAIL: TestAdd
+    math_test.go:9: got 5, want 6   ← строка в TestAdd, сразу понятно
 ```
 
 ---

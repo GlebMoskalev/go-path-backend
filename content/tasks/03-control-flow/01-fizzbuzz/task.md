@@ -3,6 +3,8 @@ title: "FizzBuzz"
 description: "Возвращает Fizz, Buzz, FizzBuzz или число в зависимости от делимости"
 order: 1
 difficulty: easy
+hints:
+  - "Используй `fmt.Sprintf` или `strconv.Itoa` для преобразования числа в строку"
 ---
 
 # FizzBuzz
@@ -13,8 +15,6 @@ difficulty: easy
 - `"Fizz"` — если `n` делится только на 3
 - `"Buzz"` — если `n` делится только на 5
 - строковое представление числа — в остальных случаях
-
-Используйте `fmt.Sprintf` или `strconv.Itoa` для преобразования числа в строку.
 
 ## Пример
 

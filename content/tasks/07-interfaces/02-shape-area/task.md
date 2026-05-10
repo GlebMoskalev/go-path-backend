@@ -3,6 +3,8 @@ title: "Площади фигур"
 description: "Реализует интерфейс Shape для Circle и Rectangle, считает суммарную площадь"
 order: 2
 difficulty: medium
+hints:
+  - "Используй `math.Pi` для числа π"
 ---
 
 # Площади фигур
@@ -14,8 +16,6 @@ difficulty: medium
 1. `Circle` с полем `Radius float64` и методом `Area() float64` → `π * r²`
 2. `Rectangle` с полями `Width, Height float64` и методом `Area() float64` → `w * h`
 3. `TotalArea(shapes []Shape) float64` — сумма площадей всех фигур
-
-Используйте `math.Pi` для числа π.
 
 ## Пример
 

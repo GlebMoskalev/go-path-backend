@@ -1,7 +1,5 @@
 package solution
 
-import "math"
-
 // Shape — фигура, умеющая вычислять свою площадь.
 type Shape interface {
 	Area() float64
@@ -15,7 +13,6 @@ type Circle struct {
 // Area возвращает площадь круга.
 func (c Circle) Area() float64 {
 	// Напишите ваш код здесь
-	_ = math.Pi
 	return 0
 }
 

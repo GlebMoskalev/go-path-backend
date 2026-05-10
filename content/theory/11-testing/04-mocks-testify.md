@@ -274,12 +274,76 @@ mockRepo.On("FindByID", 1).
 
 ---
 
+## mockery — генерация моков
+
+Писать моки вручную утомительно: каждый раз одни и те же `m.Called(...)`, `args.Get(0)`, каст типов. `mockery` от Uber генерирует весь этот код автоматически по интерфейсу.
+
+Установка:
+```bash
+go install github.com/vektra/mockery/v2@latest
+```
+
+Генерация мока для интерфейса:
+```bash
+mockery --name=UserRepository --dir=./internal --output=./internal/mocks
+```
+
+`mockery` создаст файл `mocks/UserRepository.go` с полностью готовым моком. Руками писать ничего не нужно.
+
+В тесте используешь так же как `testify/mock`:
+
+```go
+import "myapp/internal/mocks"
+
+func TestGetUser(t *testing.T) {
+    mockRepo := mocks.NewUserRepository(t)  // NewXxx(t) вместо new(MockXxx)
+    mockRepo.On("FindByID", 1).Return(&User{ID: 1, Name: "Алиса"}, nil)
+
+    svc := &UserService{repo: mockRepo}
+    user, err := svc.GetUser(1)
+
+    assert.NoError(t, err)
+    assert.Equal(t, "Алиса", user.Name)
+    mockRepo.AssertExpectations(t)
+}
+```
+
+Удобно настроить генерацию через `.mockery.yaml` в корне проекта, чтобы не вводить флаги каждый раз:
+
+```yaml
+# .mockery.yaml
+with-expecter: true   # генерирует типизированный EXPECT() API
+packages:
+  myapp/internal:
+    interfaces:
+      UserRepository:
+```
+
+С `with-expecter: true` можно писать ожидания без строк:
+
+```go
+// Вместо mockRepo.On("FindByID", 1)...
+mockRepo.EXPECT().FindByID(1).Return(&User{ID: 1, Name: "Алиса"}, nil)
+```
+
+Это безопаснее — опечатка в имени метода поймается компилятором, а не во время теста.
+
+Обычный workflow: изменил интерфейс → запустил `go generate` → моки обновились автоматически. Для этого добавь в файл с интерфейсом:
+
+```go
+//go:generate mockery --name=UserRepository
+type UserRepository interface { ... }
+```
+
+---
+
 ## Итог
 
 - Проектируй зависимости через интерфейсы — это делает код тестируемым
-- Ручные моки: простой struct, реализующий интерфейс; подходит для большинства случаев
+- Ручные моки: простой struct, реализующий интерфейс; подходит для небольших случаев
+- `testify/mock` — моки с проверкой вызовов; для сложных сценариев
+- `mockery` — генерирует моки автоматически; избавляет от рутины при большом количестве интерфейсов
 - `httptest.NewRecorder` — тестировать handler без поднятия сервера
 - `httptest.NewServer` — тестировать HTTP-клиент против реального сервера
 - `testify/assert` — читаемые проверки с информативными сообщениями об ошибках
 - `testify/require` — аналог, но останавливает тест при первой ошибке
-- `testify/mock` — моки с проверкой вызовов; для сложных сценариев

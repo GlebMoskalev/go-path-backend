@@ -17,12 +17,13 @@ order: 6
 var counter int
 
 func main() {
+    var wg sync.WaitGroup
     for i := 0; i < 1000; i++ {
-        go func() {
+        wg.Go(func() {
             counter++  // одновременное чтение и запись из разных горутин
-        }()
+        })
     }
-    time.Sleep(time.Second)
+    wg.Wait()
     fmt.Println(counter)  // непредсказуемый результат: 947, 1000, 823...
 }
 ```
